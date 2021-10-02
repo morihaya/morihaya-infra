@@ -1,0 +1,7 @@
+---
+- name: Test play
+  hosts: all
+  gather_facts: no
+  tasks:
+  - name: Ping
+    ping:

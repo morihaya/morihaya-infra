@@ -1,0 +1,38 @@
+---
+- name: Add users
+  ansible.builtin.user:
+    name: '{{ item.name }}'
+    groups: '{{ item.groups }}'
+    password: '{{ item.password }}'
+    state: '{{ item.state }}'
+    comment: '{{ item.comment }}'
+    update_password: on_create
+  with_items:
+    - '{{ users }}'
+  tags:
+    - users
+
+- name: Set authorized_keys
+  ansible.builtin.authorized_key:
+    user: '{{ item.name }}'
+    key: "{{ lookup('file', item.key) }}"
+    state: present
+    exclusive: True
+  with_items:
+    - '{{ users }}'
+  when:
+    - item.state == 'present'
+  tags:
+    - users
+    - authorized_keys
+
+- name: Set aliaces
+  ansible.builtin.blockinfile:
+    path: '/home/{{ item.name }}/.bashrc'
+    block: '{{ bashrc_block }}'
+  with_items:
+    - '{{ users }}'
+  tags:
+    - users
+    - bashrc
+    

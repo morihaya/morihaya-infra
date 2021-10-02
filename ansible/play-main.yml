@@ -1,0 +1,7 @@
+---
+- name: Main play
+  hosts: all
+  gather_facts: yes
+  become: yes
+  roles:
+  - common

@@ -1,0 +1,30 @@
+---
+users:
+  - name: "morihaya"
+    password: "!!"
+    state: 'present'
+    comment: ''
+    groups: 'wheel'
+    key: "keys/authorized_keys.morihaya"
+
+
+bashrc_block: |
+  alias ll='ls -l'
+  alias lt='ls -lt'
+  alias ltr='ls -ltr'
+  alias g='git'
+  alias gcv='git commit -v'
+  alias gdc='git diff --cached'
+  alias gdi='git diff'
+  alias gf='git fetch --prune'
+  alias gp='git plog -10'
+  alias gr='git fetch --prune && git checkout origin/master && git plog -10 && git status'
+  alias gs='git switch -d origin/master'
+  alias gst='git status'
+  alias t='terraform'
+  alias k='kubectl'
+  alias kg='kubectl get'
+  alias kd='kubectl describe'
+  alias kx='kubectx'
+  alias kn='kubens'
+  alias d='docker'
