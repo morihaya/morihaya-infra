@@ -1,0 +1,13 @@
+---
+- name: Initdb PostgreSQL
+  ansible.builtin.shell: sudo su - postgres -c initdb
+  tags:
+    - postgres
+
+- name: Restart PostgreSQL
+  ansible.builtin.service:
+    name: postgresql
+    state: restarted
+    enabled: yes
+  tags:
+    - postgres

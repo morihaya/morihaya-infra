@@ -1,0 +1,14 @@
+---
+- name: Install PostgreSQL
+  ansible.builtin.package:
+    name:
+      - postgresql
+      - postgresql-contrib
+      - postgresql-devel
+      - postgresql-docs
+      - postgresql-server
+  notify:
+    - Initdb PostgreSQL
+    - Restart PostgreSQL
+  tags:
+    - postgres
