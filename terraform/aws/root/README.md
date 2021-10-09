@@ -3,9 +3,14 @@
 My personal AWS Root account
 
 Using:
-- AWS Control Tower (not managed by terraform)
-- Budget
-- AWS Chatbot (not managed by terraform)
+- Managed by terraform
+  - AWS Budget
+  - Amazon SNS(Simple Notification Service)
+- Not managed by terraform
+  - AWS Control Tower (not managed by terraform)
+  - AWS Chatbot (not managed by terraform)
+  - Amazon S3
+  - Route 53
 
 Terraform state is in app.terraform.io.
 
