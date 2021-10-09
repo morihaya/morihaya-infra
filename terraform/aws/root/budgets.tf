@@ -14,16 +14,6 @@ resource "aws_budgets_budget" "mybasic" {
       "yukiya.hayashi@gmail.com",
     ]
     subscriber_sns_topic_arns = []
-    threshold                 = 100
-    threshold_type            = "PERCENTAGE"
-  }
-  notification {
-    comparison_operator = "GREATER_THAN"
-    notification_type   = "ACTUAL"
-    subscriber_email_addresses = [
-      "yukiya.hayashi@gmail.com",
-    ]
-    subscriber_sns_topic_arns = []
     threshold                 = 30
     threshold_type            = "PERCENTAGE"
   }
@@ -37,6 +27,17 @@ resource "aws_budgets_budget" "mybasic" {
     threshold                 = 60
     threshold_type            = "PERCENTAGE"
   }
+  notification {
+    comparison_operator = "GREATER_THAN"
+    notification_type   = "ACTUAL"
+    subscriber_email_addresses = [
+      "yukiya.hayashi@gmail.com",
+    ]
+    subscriber_sns_topic_arns = []
+    threshold                 = 100
+    threshold_type            = "PERCENTAGE"
+  }
+
   notification {
     comparison_operator = "GREATER_THAN"
     notification_type   = "FORECASTED"
