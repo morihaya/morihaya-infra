@@ -1,4 +1,4 @@
-# Terraform AWS - Rott
+# Terraform AWS - Root
 
 My personal AWS Root account
 
