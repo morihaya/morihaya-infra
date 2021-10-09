@@ -11,19 +11,23 @@ resource "aws_budgets_budget" "mybasic" {
     comparison_operator = "GREATER_THAN"
     notification_type   = "ACTUAL"
     subscriber_email_addresses = [
-      "yukiya.hayashi@gmail.com",
+      var.mail_alert,
     ]
-    subscriber_sns_topic_arns = []
-    threshold                 = 30
-    threshold_type            = "PERCENTAGE"
+    subscriber_sns_topic_arns = [
+      module.sns_budgets.sns_topic_arn,
+    ]
+    threshold      = 30
+    threshold_type = "PERCENTAGE"
   }
   notification {
     comparison_operator = "GREATER_THAN"
     notification_type   = "ACTUAL"
     subscriber_email_addresses = [
-      "yukiya.hayashi@gmail.com",
+      var.mail_alert,
     ]
-    subscriber_sns_topic_arns = []
+    subscriber_sns_topic_arns = [
+      module.sns_budgets.sns_topic_arn,
+    ]
     threshold                 = 60
     threshold_type            = "PERCENTAGE"
   }
@@ -31,9 +35,11 @@ resource "aws_budgets_budget" "mybasic" {
     comparison_operator = "GREATER_THAN"
     notification_type   = "ACTUAL"
     subscriber_email_addresses = [
-      "yukiya.hayashi@gmail.com",
+      var.mail_alert,
     ]
-    subscriber_sns_topic_arns = []
+    subscriber_sns_topic_arns = [
+      module.sns_budgets.sns_topic_arn,
+    ]
     threshold                 = 100
     threshold_type            = "PERCENTAGE"
   }
@@ -42,9 +48,11 @@ resource "aws_budgets_budget" "mybasic" {
     comparison_operator = "GREATER_THAN"
     notification_type   = "FORECASTED"
     subscriber_email_addresses = [
-      "yukiya.hayashi@gmail.com",
+      var.mail_alert,
     ]
-    subscriber_sns_topic_arns = []
+    subscriber_sns_topic_arns = [
+      module.sns_budgets.sns_topic_arn,
+    ]
     threshold                 = 150
     threshold_type            = "PERCENTAGE"
   }

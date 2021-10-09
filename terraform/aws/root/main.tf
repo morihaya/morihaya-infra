@@ -17,3 +17,11 @@ provider "aws" {
     }
   }
 }
+
+
+variable "aws_accountid" {
+  type = string
+}
+variable "mail_alert" {
+  type = string
+}
