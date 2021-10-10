@@ -14,6 +14,14 @@ terraform {
   }
 }
 
+variable "newrelic_accountid" {
+  type = string  
+}
+
+variable "newrelic_key" {
+  type = string  
+}
+
 provider "newrelic" {
   account_id = var.newrelic_accountid # Your New Relic account ID
   api_key    = var.newrelic_key       # Your New Relic user key
