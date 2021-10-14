@@ -15,11 +15,11 @@ terraform {
 }
 
 variable "newrelic_accountid" {
-  type = string  
+  type = string
 }
 
 variable "newrelic_key" {
-  type = string  
+  type = string
 }
 
 provider "newrelic" {

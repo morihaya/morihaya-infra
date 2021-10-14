@@ -5,7 +5,7 @@ resource "newrelic_synthetics_monitor" "main" {
     "github.com"         = "GitHub, Inc."
     "mail.google.com"    = "gmail"
     "www.oisix.com"      = "Oisix"
-
+    "example.com"        = "Example Domain"
   }
   name      = each.key
   type      = "SIMPLE"
