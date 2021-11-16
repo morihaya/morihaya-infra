@@ -11,27 +11,6 @@ provider "spotify" {
   api_key = var.spotify_api_key
 }
 
-data "spotify_search_track" "BOC_01" {
-  artist = "BUMP OF CHICKEN"
-  album = "FLAME VEIN +1"
-}
-data "spotify_search_track" "BOC_02" {
-  artist = "BUMP OF CHICKEN"
-  album = "THE LIVING DEAD"
-}
-data "spotify_search_track" "BOC_03" {
-  artist = "BUMP OF CHICKEN"
-  album = "jupiter"
-}
-data "spotify_search_track" "BOC_04" {
-  artist = "BUMP OF CHICKEN"
-  album = "ユグドラシル"
-}
-data "spotify_search_track" "BOC_05" {
-  artist = "BUMP OF CHICKEN"
-  album = "orbital period"
-}
-
 resource "spotify_playlist" "play01" {
   name        = "High School hits"
   description = "This playlist was created by Terraform"
@@ -55,5 +34,17 @@ resource "spotify_playlist" "play01" {
     data.spotify_search_track.BOC_05.tracks[5].id, # 涙のふるさと
     data.spotify_search_track.BOC_05.tracks[6].id, # supernova
     data.spotify_search_track.BOC_05.tracks[7].id, # ハンマーソングと痛みの塔
+    data.spotify_search_track.RIP_02.tracks[0].id, # STEPPER'S DELIGHT
+    data.spotify_search_track.RIP_02.tracks[2].id, # 雑念エンタテインメント
+    data.spotify_search_track.RIP_03.tracks[0].id, # ONE
+    data.spotify_search_track.RIP_03.tracks[1].id, # FUNKASTIC
+    data.spotify_search_track.RIP_03.tracks[2].id, # Tokyo Classic
+    data.spotify_search_track.RIP_03.tracks[6].id, # 楽園ベイベー
+    data.spotify_search_track.OzaKen_00.tracks[0].id, # ラブリー
+    data.spotify_search_track.OzaKen_00.tracks[1].id, # 今夜はブギー・バック - nice vocal
+    data.spotify_search_track.OzaKen_00.tracks[2].id, # ぼくらが旅に出る理由
+    data.spotify_search_track.OzaKen_00.tracks[3].id, # 愛し愛されて生きるのさ
+    data.spotify_search_track.OzaKen_02.tracks[0].id, # 強い気持ち・強い愛
+    data.spotify_search_track.OzaKen_02.tracks[1].id, # 痛快ウキウキ通り
   ]
 }
