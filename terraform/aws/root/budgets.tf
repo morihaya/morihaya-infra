@@ -28,8 +28,8 @@ resource "aws_budgets_budget" "mybasic" {
     subscriber_sns_topic_arns = [
       module.sns_budgets.sns_topic_arn,
     ]
-    threshold                 = 60
-    threshold_type            = "PERCENTAGE"
+    threshold      = 60
+    threshold_type = "PERCENTAGE"
   }
   notification {
     comparison_operator = "GREATER_THAN"
@@ -40,8 +40,8 @@ resource "aws_budgets_budget" "mybasic" {
     subscriber_sns_topic_arns = [
       module.sns_budgets.sns_topic_arn,
     ]
-    threshold                 = 100
-    threshold_type            = "PERCENTAGE"
+    threshold      = 100
+    threshold_type = "PERCENTAGE"
   }
 
   notification {
@@ -53,7 +53,7 @@ resource "aws_budgets_budget" "mybasic" {
     subscriber_sns_topic_arns = [
       module.sns_budgets.sns_topic_arn,
     ]
-    threshold                 = 150
-    threshold_type            = "PERCENTAGE"
+    threshold      = 150
+    threshold_type = "PERCENTAGE"
   }
 }
