@@ -20,15 +20,3 @@ resource "aws_route53_record" "example4" {
     create_before_destroy = true
   }
 }
-
-# a record for example.morihaya.tech
-resource "aws_route53_record" "example3" {
-  zone_id = data.aws_route53_zone.morihaya_tech.zone_id
-  name    = "example3.morihaya.tech"
-  type    = "A"
-  ttl     = 299
-  records = ["192.0.2.3"]
-  lifecycle {
-    create_before_destroy = true
-  }
-}
