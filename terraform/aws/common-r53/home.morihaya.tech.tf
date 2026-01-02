@@ -11,3 +11,25 @@ resource "aws_route53_record" "pve_home" {
     create_before_destroy = true
   }
 }
+
+resource "aws_route53_record" "ceph_home" {
+  zone_id = data.aws_route53_zone.morihaya_tech.zone_id
+  name    = "ceph.home.morihaya.tech"
+  type    = "A"
+  ttl     = 300
+  records = ["192.168.1.3"]
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "aws_route53_record" "dns_home" {
+  zone_id = data.aws_route53_zone.morihaya_tech.zone_id
+  name    = "pve.home.morihaya.tech"
+  type    = "A"
+  ttl     = 300
+  records = ["192.168.1.4"]
+  lifecycle {
+    create_before_destroy = true
+  }
+}
