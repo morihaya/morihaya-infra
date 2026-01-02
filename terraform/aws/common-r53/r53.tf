@@ -16,8 +16,10 @@ resource "aws_route53_record" "example3" {
   name    = "example3.morihaya.tech"
   type    = "A"
   ttl     = 299
-  records = ["192.0.2.4"]
+  records = ["192.0.2.3"]
   lifecycle {
     create_before_destroy = true
   }
 }
+
+# Testing for No changes
