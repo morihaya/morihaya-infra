@@ -4,7 +4,6 @@ resource "newrelic_synthetics_monitor" "main" {
     "blog.morihaya.tech" = "morihaya"
     "github.com"         = "GitHub, Inc."
     "mail.google.com"    = "gmail"
-    "www.oisix.com"      = "Oisix"
     "example.com"        = "Example Domain"
   }
   name      = each.key
