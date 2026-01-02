@@ -10,7 +10,7 @@ resource "newrelic_synthetics_monitor" "main" {
   type             = "SIMPLE"
   period           = "EVERY_15_MINUTES"
   status           = "ENABLED"
-  locations_public = ["AWS_AP_NORTHEAST_1"]
+  locations_public = ["AP_NORTHEAST_1"]
 
   uri               = "https://${each.key}" # Required for type "SIMPLE" and "BROWSER"
   validation_string = each.value            # Optional for type "SIMPLE" and "BROWSER"
