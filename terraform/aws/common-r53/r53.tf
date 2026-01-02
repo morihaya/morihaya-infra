@@ -1,23 +1,25 @@
-# a record for example.morihaya.tech
-resource "aws_route53_record" "example" {
-  zone_id = data.aws_route53_zone.morihaya_tech.zone_id
-  name    = "example.morihaya.tech"
-  type    = "A"
-  ttl     = 300
-  records = ["192.0.2.1"]
-  lifecycle {
-    create_before_destroy = true
+# DNS records for morihaya.tech
+locals {
+  records = {
+    example = {
+      name    = "example.morihaya.tech"
+      records = ["192.0.2.1"]
+    }
+    example3 = {
+      name    = "example3.morihaya.tech"
+      ttl     = 299
+      records = ["192.0.2.4"]
+    }
   }
 }
 
-# a record for example.morihaya.tech
-resource "aws_route53_record" "example3" {
+module "records" {
+  source   = "./modules/route53_record"
+  for_each = local.records
+
   zone_id = data.aws_route53_zone.morihaya_tech.zone_id
-  name    = "example3.morihaya.tech"
-  type    = "A"
-  ttl     = 299
-  records = ["192.0.2.4"]
-  lifecycle {
-    create_before_destroy = true
-  }
+  name    = each.value.name
+  type    = lookup(each.value, "type", "A")
+  ttl     = lookup(each.value, "ttl", 300)
+  records = each.value.records
 }
