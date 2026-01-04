@@ -1,5 +1,10 @@
 # morihaya-infra
 
+[![Terraform Format Check](https://github.com/morihaya/morihaya-infra/actions/workflows/terraform-fmt.yml/badge.svg)](https://github.com/morihaya/morihaya-infra/actions/workflows/terraform-fmt.yml)
+[![Actionlint](https://github.com/morihaya/morihaya-infra/actions/workflows/actionlint.yml/badge.svg)](https://github.com/morihaya/morihaya-infra/actions/workflows/actionlint.yml)
+[![Dependabot Updates](https://github.com/morihaya/morihaya-infra/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/morihaya/morihaya-infra/actions/workflows/dependabot/dependabot-updates)
+[![CodeQL](https://github.com/morihaya/morihaya-infra/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/morihaya/morihaya-infra/actions/workflows/github-code-scanning/codeql)
+
 Infrastructure as Code repository managing my personal environments using Terraform and Ansible.
 
 ## 🏗️ Overview
