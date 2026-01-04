@@ -1,0 +1,42 @@
+version: 2
+updates:
+  # Terraform - AWS
+  - package-ecosystem: "terraform"
+    directory: "/terraform/aws/root"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "terraform"
+    directory: "/terraform/aws/common-r53"
+    schedule:
+      interval: "weekly"
+
+  # Terraform - New Relic
+  - package-ecosystem: "terraform"
+    directory: "/terraform/newrelic"
+    schedule:
+      interval: "weekly"
+
+  # Terraform - PagerDuty
+  - package-ecosystem: "terraform"
+    directory: "/terraform/pagerduty"
+    schedule:
+      interval: "weekly"
+
+  # Terraform - Spotify
+  - package-ecosystem: "terraform"
+    directory: "/terraform/spotify"
+    schedule:
+      interval: "weekly"
+
+  # Terraform - Tailscale
+  - package-ecosystem: "terraform"
+    directory: "/terraform/tailscale"
+    schedule:
+      interval: "weekly"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
