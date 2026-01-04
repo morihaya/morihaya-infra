@@ -5,7 +5,7 @@ locals {
   home_records = {
     pve = {
       name    = "pve.home.morihaya.tech"
-      records = ["192.168.1.2"]
+      records = ["192.168.1.6"]
     }
     ceph = {
       name    = "ceph.home.morihaya.tech"
@@ -13,7 +13,15 @@ locals {
     }
     dns = {
       name    = "dns.home.morihaya.tech"
-      records = ["192.168.1.4"]
+      records = ["192.168.1.6"]
+    }
+    pulse = {
+      name    = "pulse.home.morihaya.tech"
+      records = ["192.168.1.6"]
+    }
+    traefik = {
+      name    = "traefik.home.morihaya.tech"
+      records = ["192.168.1.6"]
     }
   }
 }
