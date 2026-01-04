@@ -39,14 +39,6 @@ resource "aws_route53_record" "googole_postmaster_tools" {
 }
 
 ## Dmarc Record
-import {
-  to = aws_route53_record.dmarc
-  identity = {
-    zone_id = aws_route53_zone.morihaya-tech.zone_id
-    name    = "_dmarc"
-    type    = "TXT"
-  }
-}
 resource "aws_route53_record" "dmarc" {
   zone_id = aws_route53_zone.morihaya-tech.zone_id
   name    = "_dmarc"
@@ -59,14 +51,6 @@ resource "aws_route53_record" "dmarc" {
 
 # Route53 NS Records
 ## For Azure DNS
-import {
-  to = aws_route53_record.azure_ns
-  identity = {
-    zone_id = aws_route53_zone.morihaya-tech.zone_id
-    name    = "azure"
-    type    = "NS"
-  }
-}
 resource "aws_route53_record" "azure_ns" {
   zone_id = aws_route53_zone.morihaya-tech.zone_id
   name    = "azure"
