@@ -1,6 +1,6 @@
 module "sns_budgets" {
   source  = "terraform-aws-modules/sns/aws"
-  version = "~> 3.0"
+  version = "~> 7.0"
 
   name = "budgets"
 
