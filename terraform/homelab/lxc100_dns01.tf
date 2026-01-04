@@ -1,13 +1,6 @@
 # =============================================================================
-# LXC Container 1
+# LXC Container 100 - DNS01
 # =============================================================================
-# Import: terraform import proxmox_virtual_environment_container.lxc_1 pve/100
-
-import {
-  to = proxmox_virtual_environment_container.lxc_100
-  id = "pve/100"
-}
-
 resource "proxmox_virtual_environment_container" "lxc_100" {
   node_name   = var.proxmox_node_name
   vm_id       = 100
@@ -21,9 +14,9 @@ resource "proxmox_virtual_environment_container" "lxc_100" {
   }
 
   console {
-    enabled = true
+    enabled   = true
     tty_count = 2
-    type = "tty"
+    type      = "tty"
   }
 
   cpu {
@@ -41,8 +34,8 @@ resource "proxmox_virtual_environment_container" "lxc_100" {
   }
 
   network_interface {
-    name   = "eth0"
-    bridge = "vmbr0"
+    name     = "eth0"
+    bridge   = "vmbr0"
     firewall = true
   }
 
