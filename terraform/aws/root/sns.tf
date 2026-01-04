@@ -4,7 +4,7 @@ module "sns_budgets" {
 
   name = "budgets"
 
-  policy = jsonencode(
+  topic_policy = jsonencode(
     {
       "Version" : "2008-10-17",
       "Id" : "__default_policy_ID",

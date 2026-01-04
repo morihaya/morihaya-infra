@@ -1,7 +1,3 @@
-import {
-  to = aws_route53domains_registered_domain.morihaya-tech
-  id = "morihaya.tech"
-}
 resource "aws_route53domains_registered_domain" "morihaya-tech" {
   domain_name = "morihaya.tech"
 
