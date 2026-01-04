@@ -1,5 +1,26 @@
+import {
+  to = aws_route53domains_registered_domain.morihaya-tech
+  id = "morihaya.tech"
+}
+resource "aws_route53domains_registered_domain" "morihaya-tech" {
+  domain_name = "morihaya.tech"
+
+  name_server {
+    name = "ns-1199.awsdns-21.org"
+  }
+  name_server {
+    name = "ns-1989.awsdns-56.co.uk"
+  }
+  name_server {
+    name = "ns-771.awsdns-32.net"
+  }
+  name_server {
+    name = "ns-64.awsdns-08.com"
+  }
+}
+
 resource "aws_route53_zone" "morihaya-tech" {
-  comment           = "muumuu-domain.com"
+  comment           = "Registered in Route53"
   delegation_set_id = null
   force_destroy     = null
   name              = "morihaya.tech"
