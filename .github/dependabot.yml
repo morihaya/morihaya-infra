@@ -35,6 +35,18 @@ updates:
     schedule:
       interval: "weekly"
 
+  # Terraform - Azure
+  - package-ecosystem: "terraform"
+    directory: "/terraform/azure"
+    schedule:
+      interval: "weekly"
+
+  # Terraform - Homelab
+  - package-ecosystem: "terraform"
+    directory: "/terraform/homelab"
+    schedule:
+      interval: "weekly"
+
   # GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
