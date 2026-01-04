@@ -1,4 +1,6 @@
 name: Terraform Format Check
+permissions:
+  contents: read
 
 on:
   push:
