@@ -11,7 +11,7 @@ variable "name" {
 variable "type" {
   description = "DNS record type (A, CNAME, etc.)"
   type        = string
-  default = "A"
+  default     = "A"
 }
 
 variable "ttl" {
