@@ -1,12 +1,6 @@
 # =============================================================================
 # LXC Container 102 - Traefik
 # =============================================================================
-
-import {
-  to = proxmox_virtual_environment_container.lxc_102
-  id = "pve/102"
-}
-
 resource "proxmox_virtual_environment_container" "lxc_102" {
   node_name   = var.proxmox_node_name
   vm_id       = 102
