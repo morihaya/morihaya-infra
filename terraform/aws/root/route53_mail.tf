@@ -1,11 +1,16 @@
-## Google Postmaster Tools
-resource "aws_route53_record" "googole_postmaster_tools" {
+## Root txt for morihaya.tech
+moved {
+  from = aws_route53_record.googole_postmaster_tools
+  to   = aws_route53_record.root
+}
+resource "aws_route53_record" "root" {
   zone_id = aws_route53_zone.morihaya-tech.zone_id
   name    = ""
   type    = "TXT"
   ttl     = 300
   records = [
-    "google-site-verification=KrWd-ES4dWt0_LSLo8F_-oX7ZnclQesj17VEViVP_Wo"
+    "google-site-verification=KrWd-ES4dWt0_LSLo8F_-oX7ZnclQesj17VEViVP_Wo", # For postmaster tools
+    "v=spf1 mx ra=postmaster -all"                                          # SPF Record
   ]
 }
 
@@ -58,21 +63,14 @@ resource "aws_route53_record" "dkim_2" {
   type    = "TXT"
   ttl     = 300
   records = [
-    "v=DKIM1; k=rsa; h=sha256; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzcO4IIjzKwHGAZvVPfzxqWDSQ/Tgy3+lgqc5wh8OEnq5ne3MweVLawxBLIbfXn4mALfr899l/pO35XsR0xQM3LxGJ5H0m/z6V/I/FDKHGCWJLG7n0faXk6rlejDrx+Roz25C3cKqxJulKzhEtJbiYiDxxVZPi7jS0X6Si9I/1NlLyDTNO9eo8Mrh+PYh0hcikfzdwg8sRXNITpBycvv85mHaY1k+j4+NwLCPvJMvtUJOnzXXNLYafxNJZ0aP3zI/Oun8gmnPojUwndwH8aXq/lSLuMKLjhsmvK8HTfNgc2YjFAh2jtW8SDRIbie4oojdc69Dgv68M+LA1kVQ4zdszwIDAQAB"
+    join("", [
+      "\"v=DKIM1; k=rsa; h=sha256; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzcO4IIjzKwHGAZvVPfzxqWDSQ/Tgy3+lgqc5wh8OEnq5ne3MweVLawxBLIbfXn4mALfr899l/pO35XsR0xQM3LxGJ5H0m/z6V/I/FDKHGCWJLG7n0faXk6rlejDrx+Roz25C3cKqxJulKzhE\"",
+      "\"tJbiYiDxxVZPi7jS0X6Si9I/1NlLyDTNO9eo8Mrh+PYh0hcikfzdwg8sRXNITpBycvv85mHaY1k+j4+NwLCPvJMvtUJOnzXXNLYafxNJZ0aP3zI/Oun8gmnPojUwndwH8aXq/lSLuMKLjhsmvK8HTfNgc2YjFAh2jtW8SDRIbie4oojdc69Dgv68M+LA1kVQ4zdszwIDAQAB\""
+    ])
   ]
 }
 
-## SPF Record for morihaya.tech
-resource "aws_route53_record" "spf" {
-  zone_id = aws_route53_zone.morihaya-tech.zone_id
-  name    = ""
-  type    = "TXT"
-  ttl     = 300
-  records = [
-    "v=spf1 mx ra=postmaster -all"
-  ]
-}
-
+## SPF Record for mail.morihaya.tech
 resource "aws_route53_record" "spf_mail" {
   zone_id = aws_route53_zone.morihaya-tech.zone_id
   name    = "mail"
