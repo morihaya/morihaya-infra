@@ -59,8 +59,7 @@ resource "proxmox_virtual_environment_container" "lxc_104" {
   }
 
   operating_system {
-    # template_file_id = "debian-12-standard_12.12-1_amd64.tar.zst"
-    template_file_id = ""
+    template_file_id = "local:vztmpl/debian-12-standard_12.12-1_amd64.tar.zst"
     type             = "debian"
   }
 
