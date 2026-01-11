@@ -26,7 +26,6 @@ resource "proxmox_virtual_environment_vm" "vm_103" {
   # メモリ設定
   memory {
     dedicated = 2304
-    swap      = 512
   }
 
   # ブートディスク (scsi0)
