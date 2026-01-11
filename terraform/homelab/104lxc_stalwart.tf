@@ -48,9 +48,18 @@ resource "proxmox_virtual_environment_container" "lxc_104" {
         gateway = "192.168.1.1"
       }
     }
+
+    user_account {
+      keys = [
+        trimspace(var.morihaya_ssh_public_key)
+      ]
+      password = var.PROXMOX_DEFAULT_PASSWORD
+    }
+
   }
 
   operating_system {
+    # template_file_id = "debian-12-standard_12.12-1_amd64.tar.zst"
     template_file_id = ""
     type             = "debian"
   }

@@ -11,7 +11,12 @@ variable "PROXMOX_VE_INSECURE" {
   type    = bool
   default = true
 }
-
+variable "PROXMOX_DEFAULT_PASSWORD" {
+  type = string
+}
+variable "morihaya_ssh_public_key" {
+  type = string
+}
 # =============================================================================
 # Proxmox Configuration Variables
 # =============================================================================
