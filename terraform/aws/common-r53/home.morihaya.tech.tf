@@ -27,6 +27,7 @@ locals {
       name    = "stalwart.home.morihaya.tech"
       records = ["192.168.1.6"] # 実IPは 192.168.1.8 だがTraefik経由でアクセス
     }
+  }
 }
 
 module "home_records" {
