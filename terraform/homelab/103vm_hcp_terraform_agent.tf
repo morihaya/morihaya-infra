@@ -64,9 +64,8 @@ resource "proxmox_virtual_environment_vm" "vm_103" {
   boot_order = ["scsi0", "ide2", "net0"]
 
   # QEMU Guest Agent (現在無効)
-  agent {
-    enabled = false
-  }
+  #agent {
+  #}
 
   # SMBIOS UUID
   machine = "pc"
