@@ -1,16 +1,10 @@
 # =============================================================================
-# LXC Container 102 - Traefik
+# LXC Container 104 - Stalwart Mail Server
 # =============================================================================
-
-import {
-  to = proxmox_virtual_environment_container.lxc_102
-  id = "pve/102"
-}
-
-resource "proxmox_virtual_environment_container" "lxc_102" {
+resource "proxmox_virtual_environment_container" "lxc_104" {
   node_name   = var.proxmox_node_name
-  vm_id       = 102
-  description = "LXC Container 102 - Managed by Terraform"
+  vm_id       = 104
+  description = "Stalwart Mail Server - Managed by Terraform"
 
   unprivileged = true
   started      = true
@@ -26,17 +20,17 @@ resource "proxmox_virtual_environment_container" "lxc_102" {
   }
 
   cpu {
-    cores = 1
+    cores = 2
   }
 
   memory {
-    dedicated = 512
+    dedicated = 2048
     swap      = 512
   }
 
   disk {
     datastore_id = "local-lvm"
-    size         = 8
+    size         = 20
   }
 
   network_interface {
@@ -46,11 +40,11 @@ resource "proxmox_virtual_environment_container" "lxc_102" {
   }
 
   initialization {
-    hostname = "traefik"
+    hostname = "stalwart"
 
     ip_config {
       ipv4 {
-        address = "192.168.1.6/24"
+        address = "192.168.1.8/24"
         gateway = "192.168.1.1"
       }
     }
@@ -58,7 +52,13 @@ resource "proxmox_virtual_environment_container" "lxc_102" {
 
   operating_system {
     template_file_id = ""
-    type             = "alpine"
+    type             = "debian"
+  }
+
+  startup {
+    down_delay = -1
+    order      = 99
+    up_delay   = -1
   }
 
   lifecycle {

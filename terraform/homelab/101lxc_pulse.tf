@@ -1,12 +1,6 @@
 # =============================================================================
 # LXC Container 101 - Pulse
 # =============================================================================
-
-import {
-  to = proxmox_virtual_environment_container.lxc_101
-  id = "pve/101"
-}
-
 resource "proxmox_virtual_environment_container" "lxc_101" {
   node_name   = var.proxmox_node_name
   vm_id       = 101
