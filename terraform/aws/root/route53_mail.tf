@@ -63,10 +63,8 @@ resource "aws_route53_record" "dkim_2" {
   type    = "TXT"
   ttl     = 300
   records = [
-    join("", [
-      "\"v=DKIM1; k=rsa; h=sha256; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzcO4IIjzKwHGAZvVPfzxqWDSQ/Tgy3+lgqc5wh8OEnq5ne3MweVLawxBLIbfXn4mALfr899l/pO35XsR0xQM3LxGJ5H0m/z6V/I/FDKHGCWJLG7n0faXk6rlejDrx+Roz25C3cKqxJulKzhE\"",
-      "\"tJbiYiDxxVZPi7jS0X6Si9I/1NlLyDTNO9eo8Mrh+PYh0hcikfzdwg8sRXNITpBycvv85mHaY1k+j4+NwLCPvJMvtUJOnzXXNLYafxNJZ0aP3zI/Oun8gmnPojUwndwH8aXq/lSLuMKLjhsmvK8HTfNgc2YjFAh2jtW8SDRIbie4oojdc69Dgv68M+LA1kVQ4zdszwIDAQAB\""
-    ])
+    "v=DKIM1; k=rsa; h=sha256; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzcO4IIjzKwHGAZvVPfzxqWDSQ/Tgy3+lgqc5wh8OEnq5ne3MweVLawxBLIbfXn4mALfr899l/pO35XsR0xQM3LxGJ5H0m/z6V/I/FDKHGCWJLG7n0faXk6rlejDrx+Roz25C3cKqxJulKzhEtJbiYiDxxVZPi7jS0X6Si9I/1NlLyDTNO9eo8Mrh+PYh0hci",
+    "kfzdwg8sRXNITpBycvv85mHaY1k+j4+NwLCPvJMvtUJOnzXXNLYafxNJZ0aP3zI/Oun8gmnPojUwndwH8aXq/lSLuMKLjhsmvK8HTfNgc2YjFAh2jtW8SDRIbie4oojdc69Dgv68M+LA1kVQ4zdszwIDAQAB"
   ]
 }
 
