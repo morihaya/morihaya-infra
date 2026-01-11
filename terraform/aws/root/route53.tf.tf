@@ -24,31 +24,6 @@ resource "aws_route53_zone" "morihaya-tech" {
   tags_all          = {}
 }
 
-
-# Route53 Txt Records
-
-## Google Postmaster Tools
-resource "aws_route53_record" "googole_postmaster_tools" {
-  zone_id = aws_route53_zone.morihaya-tech.zone_id
-  name    = ""
-  type    = "TXT"
-  ttl     = 300
-  records = [
-    "google-site-verification=KrWd-ES4dWt0_LSLo8F_-oX7ZnclQesj17VEViVP_Wo"
-  ]
-}
-
-## Dmarc Record
-resource "aws_route53_record" "dmarc" {
-  zone_id = aws_route53_zone.morihaya-tech.zone_id
-  name    = "_dmarc"
-  type    = "TXT"
-  ttl     = 3600
-  records = [
-    "v=DMARC1;p=reject;rua=mailto:d05c4fc08c@rua.easydmarc.us;ruf=mailto:d05c4fc08c@ruf.easydmarc.us;fo=1;"
-  ]
-}
-
 # Route53 NS Records
 ## For Azure DNS
 resource "aws_route53_record" "azure_ns" {
