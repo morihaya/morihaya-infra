@@ -5,7 +5,7 @@ locals {
   home_records = {
     pve = {
       name    = "pve.home.morihaya.tech"
-      records = ["192.168.1.6"]
+      records = ["192.168.1.6"] # 実IPは 192.168.1.2 だがTraefik経由でアクセス
     }
     ceph = {
       name    = "ceph.home.morihaya.tech"
@@ -13,17 +13,20 @@ locals {
     }
     dns = {
       name    = "dns.home.morihaya.tech"
-      records = ["192.168.1.6"]
+      records = ["192.168.1.6"] # 実IPは 192.168.1.4 だがTraefik経由でアクセス
     }
     pulse = {
       name    = "pulse.home.morihaya.tech"
-      records = ["192.168.1.6"]
+      records = ["192.168.1.6"] # 実IPは 192.168.1.5 だがTraefik経由でアクセス
     }
     traefik = {
       name    = "traefik.home.morihaya.tech"
       records = ["192.168.1.6"]
     }
-  }
+    stalwart = {
+      name    = "stalwart.home.morihaya.tech"
+      records = ["192.168.1.6"] # 実IPは 192.168.1.8 だがTraefik経由でアクセス
+    }
 }
 
 module "home_records" {
