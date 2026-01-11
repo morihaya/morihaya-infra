@@ -57,14 +57,17 @@ resource "aws_route53_record" "dkim_1" {
     "v=DKIM1; k=ed25519; h=sha256; p=KJE3gVewwPZd9dUzb6meTbEscgQjRKZSw3XRKCX5+Zk="
   ]
 }
+
+locals {
+  dkim2_value = "v=DKIM1; k=rsa; h=sha256; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzcO4IIjzKwHGAZvVPfzxqWDSQ/Tgy3+lgqc5wh8OEnq5ne3MweVLawxBLIbfXn4mALfr899l/pO35XsR0xQM3LxGJ5H0m/z6V/I/FDKHGCWJLG7n0faXk6rlejDrx+Roz25C3cKqxJulKzhEtJbiYiDxxVZPi7jS0X6Si9I/1NlLyDTNO9eo8Mrh+PYh0hcikfzdwg8sRXNITpBycvv85mHaY1k+j4+NwLCPvJMvtUJOnzXXNLYafxNJZ0aP3zI/Oun8gmnPojUwndwH8aXq/lSLuMKLjhsmvK8HTfNgc2YjFAh2jtW8SDRIbie4oojdc69Dgv68M+LA1kVQ4zdszwIDAQAB"
+}
 resource "aws_route53_record" "dkim_2" {
   zone_id = aws_route53_zone.morihaya-tech.zone_id
   name    = "202601r._domainkey"
   type    = "TXT"
   ttl     = 300
   records = [
-    "v=DKIM1; k=rsa; h=sha256; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzcO4IIjzKwHGAZvVPfzxqWDSQ/Tgy3+lgqc5wh8OEnq5ne3MweVLawxBLIbfXn4mALfr899l/pO35XsR0xQM3LxGJ5H0m/z6V/I/FDKHGCWJLG7n0faXk6rlejDrx+Roz25C3cKqxJulKzhEtJbiYiDxxVZPi7jS0X6Si9I/1NlLyDTNO9eo8Mrh+PYh0hci",
-    "kfzdwg8sRXNITpBycvv85mHaY1k+j4+NwLCPvJMvtUJOnzXXNLYafxNJZ0aP3zI/Oun8gmnPojUwndwH8aXq/lSLuMKLjhsmvK8HTfNgc2YjFAh2jtW8SDRIbie4oojdc69Dgv68M+LA1kVQ4zdszwIDAQAB"
+    join("\"\"", regexall(".{1,255}", local.dkim2_value))
   ]
 }
 
