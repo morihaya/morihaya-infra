@@ -21,7 +21,7 @@ resource "aws_route53_record" "dmarc" {
   type    = "TXT"
   ttl     = 3600
   records = [
-    "v=DMARC1;p=reject;rua=mailto:d05c4fc08c@rua.easydmarc.us,mailto:postmaster@morihaya.tech;ruf=mailto:d05c4fc08c@ruf.easydmarc.us,mailto:postmaster@morihaya.tech;fo=1;"
+    "v=DMARC1; p=reject; rua=mailto:d05c4fc08c@rua.easydmarc.us,mailto:postmaster@morihaya.tech,mailto:dmarc_agg@vali.email; ruf=mailto:d05c4fc08c@ruf.easydmarc.us,mailto:postmaster@morihaya.tech; fo=1;"
   ]
 }
 
