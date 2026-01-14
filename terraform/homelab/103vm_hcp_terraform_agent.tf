@@ -79,3 +79,14 @@ resource "proxmox_virtual_environment_vm" "vm_103" {
     ]
   }
 }
+
+
+## Output Values
+output "vm_103_vm_id" {
+  description = "VM ID of traefik VM"
+  value       = proxmox_virtual_environment_vm.vm_103.vm_id
+}
+output "vm_103_ipv4" {
+  description = "IPv4 address of traefik VM"
+  value       = proxmox_virtual_environment_vm.vm_103.ipv4_addresses
+}
