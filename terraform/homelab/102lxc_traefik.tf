@@ -62,3 +62,14 @@ resource "proxmox_virtual_environment_container" "lxc_102" {
     ]
   }
 }
+
+
+## Output Values
+output "lxc_102_vm_id" {
+  description = "VM ID of LXC Container 3"
+  value       = proxmox_virtual_environment_container.lxc_102.vm_id
+}
+output "lxc_102_ipv4" {
+  description = "IPv4 address of LXC Container 3"
+  value       = proxmox_virtual_environment_container.lxc_102.ipv4
+}
