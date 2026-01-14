@@ -1,6 +1,10 @@
 # DNS records for morihaya.tech
 locals {
   records = {
+    gcp01 = {
+      name    = "gcp01.morihaya.tech"
+      records = ["34.169.244.99"]
+    }
     example = {
       name    = "example.morihaya.tech"
       records = ["192.0.2.1"]
