@@ -14,6 +14,11 @@ locals {
       ttl     = 299
       records = ["192.0.2.4"]
     }
+    haruhhkko-minecraft-server = {
+      name    = "haruhhkko-minecraft-server.morihaya.tech"
+      ttl     = 299
+      records = ["140.238.51.204"]
+    }
   }
 }
 
