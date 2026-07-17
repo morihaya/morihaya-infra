@@ -2,11 +2,6 @@
 # Virtual Machine 103 - HCP Terraform Agent
 # =============================================================================
 
-import {
-  to = proxmox_virtual_environment_vm.vm_103
-  id = "pve/103"
-}
-
 resource "proxmox_virtual_environment_vm" "vm_103" {
   node_name   = var.proxmox_node_name
   vm_id       = 103

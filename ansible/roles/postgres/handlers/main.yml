@@ -1,6 +1,10 @@
 ---
 - name: Initdb PostgreSQL
-  ansible.builtin.shell: sudo su - postgres -c initdb
+  ansible.builtin.command: initdb
+  become: true
+  become_user: postgres
+  args:
+    creates: /var/lib/pgsql/data/PG_VERSION
   tags:
     - postgres
 
@@ -8,6 +12,6 @@
   ansible.builtin.service:
     name: postgresql
     state: restarted
-    enabled: yes
+    enabled: true
   tags:
     - postgres

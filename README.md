@@ -1,6 +1,7 @@
 # morihaya-infra
 
 [![Terraform Format Check](https://github.com/morihaya/morihaya-infra/actions/workflows/terraform-fmt.yml/badge.svg)](https://github.com/morihaya/morihaya-infra/actions/workflows/terraform-fmt.yml)
+[![Terraform Validate](https://github.com/morihaya/morihaya-infra/actions/workflows/terraform-validate.yml/badge.svg)](https://github.com/morihaya/morihaya-infra/actions/workflows/terraform-validate.yml)
 [![Actionlint](https://github.com/morihaya/morihaya-infra/actions/workflows/actionlint.yml/badge.svg)](https://github.com/morihaya/morihaya-infra/actions/workflows/actionlint.yml)
 [![Dependabot Updates](https://github.com/morihaya/morihaya-infra/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/morihaya/morihaya-infra/actions/workflows/dependabot/dependabot-updates)
 [![CodeQL](https://github.com/morihaya/morihaya-infra/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/morihaya/morihaya-infra/actions/workflows/github-code-scanning/codeql)
@@ -51,6 +52,18 @@ This repository contains infrastructure definitions for managing multiple cloud 
 - **Terraform** - Infrastructure provisioning across multiple providers
 - **Ansible** - Configuration management and automation
 - **GitHub Actions** - CI/CD workflows
+
+## 📐 Conventions
+
+- Each Terraform root follows the same layout: `versions.tf` (terraform block,
+  provider requirements, HCP Terraform `cloud` backend), `providers.tf`,
+  `variables.tf`, and resource files
+- State lives in HCP Terraform (org: `morihaya`), one workspace per root
+- Provider versions are pinned and `.terraform.lock.hcl` files are committed
+- The Terraform CLI version for local development is pinned in
+  [.terraform-version](.terraform-version) (tfenv/mise compatible)
+- CI runs `terraform fmt -check`, `terraform validate`, `tflint`, and
+  `actionlint`; GitHub Actions are pinned to commit SHAs (via pinact)
 
 ## 📝 License
 
