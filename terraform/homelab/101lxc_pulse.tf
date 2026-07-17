@@ -21,6 +21,7 @@ resource "proxmox_virtual_environment_container" "lxc_101" {
 
   cpu {
     cores = 2
+    limit = 2
   }
 
   memory {

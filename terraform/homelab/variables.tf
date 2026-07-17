@@ -22,17 +22,6 @@ variable "PROXMOX_VE_INSECURE" {
   default     = true
 }
 
-variable "PROXMOX_DEFAULT_PASSWORD" {
-  description = "Default password set on newly provisioned containers"
-  type        = string
-  sensitive   = true
-}
-
-variable "morihaya_ssh_public_key" {
-  description = "SSH public key installed on provisioned containers"
-  type        = string
-}
-
 # =============================================================================
 # Proxmox Configuration Variables
 # =============================================================================

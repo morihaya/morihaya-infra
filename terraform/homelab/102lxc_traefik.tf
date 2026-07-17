@@ -6,8 +6,9 @@ resource "proxmox_virtual_environment_container" "lxc_102" {
   vm_id       = 102
   description = "LXC Container 102 - Managed by Terraform"
 
-  unprivileged = true
-  started      = true
+  unprivileged  = true
+  started       = true
+  start_on_boot = false
 
   features {
     nesting = true
