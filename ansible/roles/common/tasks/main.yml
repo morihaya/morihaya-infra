@@ -7,32 +7,28 @@
     state: '{{ item.state }}'
     comment: '{{ item.comment }}'
     update_password: on_create
-  with_items:
-    - '{{ users }}'
+  loop: '{{ users }}'
   tags:
     - users
 
 - name: Set authorized_keys
-  ansible.builtin.authorized_key:
+  ansible.posix.authorized_key:
     user: '{{ item.name }}'
     key: "{{ lookup('file', item.key) }}"
     state: present
-    exclusive: True
-  with_items:
-    - '{{ users }}'
+    exclusive: true
+  loop: '{{ users }}'
   when:
     - item.state == 'present'
   tags:
     - users
     - authorized_keys
 
-- name: Set aliaces
+- name: Set aliases
   ansible.builtin.blockinfile:
     path: '/home/{{ item.name }}/.bashrc'
     block: '{{ bashrc_block }}'
-  with_items:
-    - '{{ users }}'
+  loop: '{{ users }}'
   tags:
     - users
     - bashrc
-    

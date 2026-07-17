@@ -26,10 +26,10 @@ module "sns_budgets" {
             "SNS:Publish",
             "SNS:Receive"
           ],
-          "Resource" : "arn:aws:sns:ap-northeast-1:${var.aws_accountid}:budgets",
+          "Resource" : "arn:aws:sns:ap-northeast-1:${data.aws_caller_identity.current.account_id}:budgets",
           "Condition" : {
             "StringEquals" : {
-              "AWS:SourceOwner" : "${var.aws_accountid}"
+              "AWS:SourceOwner" : data.aws_caller_identity.current.account_id
             }
           }
         },
@@ -40,7 +40,7 @@ module "sns_budgets" {
             "Service" : "budgets.amazonaws.com"
           },
           "Action" : "SNS:Publish",
-          "Resource" : "arn:aws:sns:ap-northeast-1:${var.aws_accountid}:budgets"
+          "Resource" : "arn:aws:sns:ap-northeast-1:${data.aws_caller_identity.current.account_id}:budgets"
         }
       ]
     }

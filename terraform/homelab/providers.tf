@@ -1,15 +1,3 @@
-terraform {
-  required_version = ">= 1.5.0"
-
-  required_providers {
-    proxmox = {
-      source  = "bpg/proxmox"
-      version = "~> 0.111.0"
-    }
-  }
-}
-
-# Provider configuration
 # Authentication is handled via environment variables in HCP Terraform:
 # - PROXMOX_VE_ENDPOINT
 # - PROXMOX_VE_API_TOKEN
