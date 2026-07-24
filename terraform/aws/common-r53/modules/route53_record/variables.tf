@@ -17,7 +17,7 @@ variable "type" {
 variable "ttl" {
   description = "TTL in seconds"
   type        = number
-  default     = 300
+  default     = 297
 }
 
 variable "records" {

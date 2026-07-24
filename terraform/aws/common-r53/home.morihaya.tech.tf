@@ -37,6 +37,6 @@ module "home_records" {
   zone_id = data.aws_route53_zone.morihaya_tech.zone_id
   name    = each.value.name
   type    = lookup(each.value, "type", "A")
-  ttl     = lookup(each.value, "ttl", 300)
+  ttl     = lookup(each.value, "ttl", 297)
   records = each.value.records
 }

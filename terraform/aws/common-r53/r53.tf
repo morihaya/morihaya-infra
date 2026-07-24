@@ -11,12 +11,12 @@ locals {
     }
     example3 = {
       name    = "example3.morihaya.tech"
-      ttl     = 299
+      ttl     = 297
       records = ["192.0.2.4"]
     }
     haruhhkko-minecraft-server = {
       name    = "haruhhkko-minecraft-server.morihaya.tech"
-      ttl     = 299
+      ttl     = 297
       records = ["140.238.51.204"]
     }
   }
@@ -29,6 +29,6 @@ module "records" {
   zone_id = data.aws_route53_zone.morihaya_tech.zone_id
   name    = each.value.name
   type    = lookup(each.value, "type", "A")
-  ttl     = lookup(each.value, "ttl", 300)
+  ttl     = lookup(each.value, "ttl", 297)
   records = each.value.records
 }
