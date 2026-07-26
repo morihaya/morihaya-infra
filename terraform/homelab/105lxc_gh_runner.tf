@@ -9,11 +9,6 @@
 # node_name は HA によるフェイルオーバーで変化するため ignore_changes に入れる。
 # これを入れないと HA が移動させた直後に Terraform が元ノードへ戻そうとする。
 # =============================================================================
-import {
-  to = proxmox_virtual_environment_container.lxc_105
-  id = "pve3/105"
-}
-
 resource "proxmox_virtual_environment_container" "lxc_105" {
   node_name   = "pve3"
   vm_id       = 105
