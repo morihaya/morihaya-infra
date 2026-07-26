@@ -1,12 +1,8 @@
 # =============================================================================
-# Variables provided by the HCP Terraform workspace
+# 認証トークン (TFE_TOKEN) はここで宣言しない。
+# provider が環境変数から直接読むため、Terraform 変数として宣言する必要が無い。
+# 宣言してしまうと tflint-ignore 付きのダミー宣言が増えるだけになる。
 # =============================================================================
-variable "TFE_TOKEN" {
-  description = "HCP Terraform API token with org owner permissions. Set as a sensitive Terraform variable on the morihaya-infra workspace. Leave empty to fall back to the provider's own discovery (TFE_TOKEN environment variable, then the Terraform CLI config credentials) — that is what local runs use."
-  type        = string
-  sensitive   = true
-  default     = ""
-}
 
 variable "tfe_organization" {
   description = "HCP Terraform organization that owns the workspaces"

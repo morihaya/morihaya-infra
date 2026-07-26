@@ -61,15 +61,22 @@ HCP は state の保管場所としてのみ使われ、plan / apply は手元�
 
 | 変数 | 種別 | Sensitive | 説明 |
 |------|------|-----------|------|
-| `TFE_TOKEN` | **Terraform** | Yes | org owner 権限の API トークン |
+| `TFE_TOKEN` | **Environment** | Yes | org owner 権限の API トークン |
 
-種別が Environment ではなく **Terraform** である点に注意。`tfe` provider は
-環境変数 `TFE_TOKEN` を読む仕様だが、それに頼ると「変数は設定したのに認証が
-通らない」という分かりにくい失敗をする。[providers.tf](providers.tf) で
-`token = var.TFE_TOKEN` と明示的に渡す形にしてある。
+**種別は Environment**。`tfe` provider が環境変数から直接読む標準の方式で、
+[providers.tf](providers.tf) に `token` を書く必要も、`variable "TFE_TOKEN"` を
+宣言する必要も無い。
 
-空にしておくと provider 標準の探索 (環境変数 → Terraform CLI config の
-credentials) にフォールバックする。手元から実行する場合はこの経路になる。
+Terraform 種別にすると次の不利益がある。
+
+- 機密値が plan の成果物に含まれ、HCP に保存される。環境変数は含まれない
+  (`sensitive` は表示を隠すだけで、格納先の話は別)
+- provider が読まないので `token = var.TFE_TOKEN` という glue が必要になる
+- `tflint-ignore: terraform_unused_declarations` 付きのダミー宣言が増える
+
+手元から実行する場合は Terraform CLI config の credentials
+(`~/.terraformrc-morihaya`) が使われる。詳細はリポジトリルートの
+[README](../../README.md#-local-hcp-terraform-credentials) を参照。
 
 > [!NOTE]
 > **新規ワークスペースは初回だけ手動で run をキューする必要がある。**
