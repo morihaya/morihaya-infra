@@ -30,21 +30,24 @@
 
 ## High Availability
 
-> [!IMPORTANT]
-> **現状 HA は未稼働。** 2026-07-25 に pve が停止した際、DNS / DHCP / Traefik が
-> 揃って落ちた。3 ノードのクラスタは正常だったが、HA 登録されていたのが
-> `ct:105` の 1 件のみで、かつ共有ストレージもレプリケーションも無かったため。
+2026-07-25 に pve が停止した際、DNS / DHCP / Traefik が揃って落ちた。3 ノードの
+クラスタは正常だったが、HA 登録されていたのが `ct:105` の 1 件のみで、かつ
+共有ストレージもレプリケーションも無かったため。
 
-有効化には ZFS への移行 (破壊的作業) が必要で、手順は
-[docs/zfs-ha-migration.md](docs/zfs-ha-migration.md) にまとめてある。
-移行が全ノードで完了してから、ワークスペース変数を以下に変更して apply する。
+その恒久対策として **2026-07-26 に全ノードを ZFS 化**し、`pvesr` による
+ストレージレプリケーションと HA を有効化した。移行の記録は
+[docs/zfs-ha-migration.md](docs/zfs-ha-migration.md) を参照。
 
-| 変数 | 移行前 | 移行後 |
-|------|--------|--------|
-| `guest_datastore_id` | `local-lvm` | `local-zfs` |
-| `enable_ha` | `false` | `true` |
+| 変数 | 移行前 | 現在 |
+|------|--------|------|
+| `guest_datastore_id` | `local-lvm` | **`local-zfs`** |
+| `enable_ha` | `false` | **`true`** |
 
-`enable_ha = false` の間、[ha.tf](ha.tf) のリソースは一切作られない。
+> [!NOTE]
+> この 2 つは**コード内の `default` で管理しており、HCP のワークスペース変数
+> としては設定していない**。UI に隠れた状態を作らず、PR の speculative plan で
+> 差分を確認できるようにするため。変更する場合は
+> [variables.tf](variables.tf) を編集する。
 
 HA 有効時のフェイルオーバー設計は [ha.tf](ha.tf) の `local.ha_guests` を参照。
 共有ストレージが無いため、レプリカを持つ 2 ノードにだけ移動を許す
@@ -116,8 +119,6 @@ pveum user token add terraform@pve provider --privsep=0
 | `PROXMOX_VE_ENDPOINT` | Environment | No | Proxmox API URL |
 | `PROXMOX_VE_API_TOKEN` | Environment | Yes | `terraform@pve!provider=xxx` |
 | `PROXMOX_VE_INSECURE` | Environment | No | 自己署名証明書なら `true` |
-| `guest_datastore_id` | Terraform | No | ゲストディスクの配置先 (既定 `local-lvm`) |
-| `enable_ha` | Terraform | No | HA とレプリケーションの有効化 (既定 `false`) |
 
 ### HCP Terraform Agent
 

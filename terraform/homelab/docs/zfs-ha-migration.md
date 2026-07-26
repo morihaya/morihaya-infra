@@ -329,17 +329,28 @@ ssh root@192.168.1.10 'qm migrate 103 pve'
 
 ここまでで全ゲストのディスクが `local-zfs` 上にある状態になる。
 
-### 4-1. HCP Terraform ワークスペース変数を更新
+### 4-1. コードの default を更新
 
-ワークスペース `morihaya-infra-homelab` の Terraform 変数に以下を設定する。
+この 2 つは**コード内の `default` で管理する**。HCP のワークスペース変数として
+は設定しない (UI に隠れた状態を作らず、PR の speculative plan で差分を確認
+できるようにするため)。[variables.tf](../variables.tf) を編集する。
 
-| 変数 | 値 |
-|------|-----|
-| `guest_datastore_id` | `local-zfs` |
-| `enable_ha` | `true` |
+| 変数 | 変更前 | 変更後 |
+|------|--------|--------|
+| `guest_datastore_id` | `local-lvm` | `local-zfs` |
+| `enable_ha` | `false` | `true` |
 
-`guest_datastore_id` は実機の状態に追従させるための変数なので、
-**Phase 3 完了前に変更してはいけない** (ディスクの再作成が走る)。
+> [!WARNING]
+> `guest_datastore_id` は実機の状態に追従させるための変数なので、
+> **Phase 3 完了前に変更してはいけない**。逆に Phase 3 完了後に変更を忘れると、
+> コードが `local-lvm` を指したまま実機が `local-zfs` になり、plan が
+> **全コンテナの破壊・再作成**を出す。実際に 2026-07-26 の実施時、この状態で
+> 次の plan が出た。
+>
+> ```
+> ~ datastore_id = "local-zfs" -> "local-lvm" # forces replacement
+> Plan: 5 to add, 0 to change, 5 to destroy.
+> ```
 
 ### 4-2. 手動登録したストレージを Terraform へ引き継ぐ
 
