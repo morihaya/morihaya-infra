@@ -1,0 +1,36 @@
+name: Ansible Lint
+permissions:
+  contents: read
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'ansible/**'
+      - '.github/workflows/ansible-lint.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'ansible/**'
+      - '.github/workflows/ansible-lint.yml'
+
+jobs:
+  ansible-lint:
+    name: Ansible Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      # working_directory を ansible にすることで ansible.cfg が読まれる。
+      # requirements_file は working_directory からの相対パス。
+      # ansible.posix を入れておかないと FQCN モジュールを解決できず、
+      # 検査の精度が落ちる。
+      - name: Run ansible-lint
+        uses: ansible/ansible-lint@262624cd0ab22a4221293216856c59671ce7aa5e # v26.6.0
+        with:
+          working_directory: ansible
+          requirements_file: requirements.yml

@@ -3,6 +3,7 @@
 [![Terraform Format Check](https://github.com/morihaya/morihaya-infra/actions/workflows/terraform-fmt.yml/badge.svg)](https://github.com/morihaya/morihaya-infra/actions/workflows/terraform-fmt.yml)
 [![Terraform Validate](https://github.com/morihaya/morihaya-infra/actions/workflows/terraform-validate.yml/badge.svg)](https://github.com/morihaya/morihaya-infra/actions/workflows/terraform-validate.yml)
 [![Actionlint](https://github.com/morihaya/morihaya-infra/actions/workflows/actionlint.yml/badge.svg)](https://github.com/morihaya/morihaya-infra/actions/workflows/actionlint.yml)
+[![Ansible Lint](https://github.com/morihaya/morihaya-infra/actions/workflows/ansible-lint.yml/badge.svg)](https://github.com/morihaya/morihaya-infra/actions/workflows/ansible-lint.yml)
 [![Dependabot Updates](https://github.com/morihaya/morihaya-infra/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/morihaya/morihaya-infra/actions/workflows/dependabot/dependabot-updates)
 [![CodeQL](https://github.com/morihaya/morihaya-infra/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/morihaya/morihaya-infra/actions/workflows/github-code-scanning/codeql)
 
@@ -31,8 +32,8 @@ This repository contains infrastructure definitions for managing multiple cloud 
 │   └── tailscale/      # Tailscale VPN ACLs and DNS
 │
 └── ansible/            # Configuration Management
-    ├── inventories/    # Host definitions
-    └── roles/          # Reusable roles (common, docker-compose, postgres)
+    ├── inventories/    # Host definitions (plaintext; see ansible/README.md)
+    └── roles/          # Reusable roles (common)
 ```
 
 ## 🛠️ Terraform Configurations
@@ -62,8 +63,8 @@ This repository contains infrastructure definitions for managing multiple cloud 
 - Provider versions are pinned and `.terraform.lock.hcl` files are committed
 - The Terraform CLI version for local development is pinned in
   [.terraform-version](.terraform-version) (tfenv/mise compatible)
-- CI runs `terraform fmt -check`, `terraform validate`, `tflint`, and
-  `actionlint`; GitHub Actions are pinned to commit SHAs (via pinact)
+- CI runs `terraform fmt -check`, `terraform validate`, `tflint`, `ansible-lint`,
+  and `actionlint`; GitHub Actions are pinned to commit SHAs (via pinact)
 
 ## 🔑 Local HCP Terraform credentials
 
