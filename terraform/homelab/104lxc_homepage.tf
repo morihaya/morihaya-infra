@@ -32,7 +32,7 @@ resource "proxmox_virtual_environment_container" "lxc_104" {
   }
 
   memory {
-    dedicated = 4096
+    dedicated = 512
     swap      = 512
   }
 
