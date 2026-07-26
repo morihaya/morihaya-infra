@@ -97,7 +97,21 @@ resource "proxmox_replication" "guest" {
   type     = "local"
   target   = each.value.standby
   schedule = each.value.schedule
-  comment  = "${each.value.name}: ${each.value.primary} -> ${each.value.standby} (managed by Terraform)"
+  comment  = "${each.value.name}: ${each.value.primary} <-> ${each.value.standby} (managed by Terraform)"
+
+  lifecycle {
+    # PVE はフェイルオーバー時にレプリケーションの方向を自動で反転させる
+    # (ゲストが動いているノードから待機ノードへ複製するのが正しいため)。
+    # target を Terraform で固定すると、フェイルオーバーのたびに
+    # 「target を元に戻す = ジョブを作り直す」差分が出て HA と衝突する。
+    #
+    #   ~ target = "pve" -> "pve3" # forces replacement
+    #
+    # 方向は PVE に委ね、Terraform は「この 2 ノード間に複製ジョブが存在する」
+    # ことだけを管理する。standby の割り当てを変えたい場合はジョブを手動で
+    # 削除してから apply すること。
+    ignore_changes = [target]
+  }
 
   depends_on = [proxmox_storage_zfspool.guest_storage]
 }
