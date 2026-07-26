@@ -3,12 +3,17 @@
 #
 # 以前の removed.tf は「105 は Proxmox 上で削除済み」としていたが、実際には
 # pve3 上で稼働中であり、かつクラスタ内で唯一 HA 登録されているゲストだった。
-# removed ブロックの apply は実行されておらず state にも残っていたため、
-# ファイルごと実態に合わせて書き直す (import 不要)。
+# #61 の apply で removed ブロックが効いて state から外れているため、
+# 実態のあるノード (pve3) から import し直す。
 #
 # node_name は HA によるフェイルオーバーで変化するため ignore_changes に入れる。
 # これを入れないと HA が移動させた直後に Terraform が元ノードへ戻そうとする。
 # =============================================================================
+import {
+  to = proxmox_virtual_environment_container.lxc_105
+  id = "pve3/105"
+}
+
 resource "proxmox_virtual_environment_container" "lxc_105" {
   node_name   = "pve3"
   vm_id       = 105
