@@ -122,20 +122,22 @@ locals {
       vcs                    = true
     }
 
-    # pagerduty と tailscale は VCS 連携が無く execution_mode = local。
-    # HCP は state の保管場所としてのみ使われ、plan/apply は手元で走る。
+    # 2026-07-26 に local から remote へ移行した。以前は HCP を state の保管場所
+    # としてのみ使い plan/apply は手元で走らせていたが、久しぶりに触ると手順を
+    # 思い出せない状態だったため、他のワークスペースと同じ VCS 駆動に揃えた。
+    # 必要な変数 (pagerduty_token / mail_own) は PagerDuty variable set に登録済み。
     pagerduty = {
       name                   = "morihaya-infra-pagerduty"
       description            = null
       project_id             = data.tfe_project.default.id
-      working_directory      = ""
-      trigger_patterns       = []
-      terraform_version      = "1.0.8"
-      execution_mode         = "local"
+      working_directory      = "terraform/pagerduty"
+      trigger_patterns       = ["/terraform/pagerduty/*.tf"]
+      terraform_version      = "~>1.14.0"
+      execution_mode         = "remote"
       auto_apply             = false
       auto_apply_run_trigger = false
-      speculative_enabled    = false
-      vcs                    = false
+      speculative_enabled    = true
+      vcs                    = true
     }
 
     tailscale = {
