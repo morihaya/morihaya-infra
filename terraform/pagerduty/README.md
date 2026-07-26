@@ -51,7 +51,7 @@ PagerDuty (`https://events.pagerduty.com/v2/enqueue`) とし、ペイロード�
   "dedup_key": "pulse-{{.ID}}",
   "payload": {
     "summary": "[{{.Level}}] {{.ResourceName}}: {{.Message}}",
-    "severity": "{{if eq .Level \"critical\"}}critical{{else if eq .Level \"warning\"}}warning{{else}}info{{end}}",
+    "severity": "{{if eq .Level "critical"}}critical{{else if eq .Level "warning"}}warning{{else}}info{{end}}",
     "source": "{{.Node}}",
     "component": "{{.ResourceType}}",
     "custom_details": {
@@ -67,6 +67,18 @@ PagerDuty (`https://events.pagerduty.com/v2/enqueue`) とし、ペイロード�
 `severity` は PagerDuty が `critical` / `error` / `warning` / `info` しか受け付け
 ないため、Pulse の `.Level` から明示的に写している。`dedup_key` を `.ID` 由来に
 することで、同じアラートの再送でインシデントが増殖しない。
+
+> [!IMPORTANT]
+> **`{{ }}` の中の文字列リテラルはバックスラッシュでエスケープしない。**
+> 中身は Go テンプレートの構文が適用されるため、`\"critical\"` と書くと
+> パースに失敗する。
+>
+> ```
+> template: webhook:7: unexpected "\\" in operand
+> ```
+>
+> 囲みの `"` は `{{ }}` の外側にあり単なるテキストとして通過するので、
+> エスケープ無しでも出力は正しい JSON になる。
 
 > [!NOTE]
 > Pulse の `notifyOnResolve` が無効な間、復旧通知が飛ばないためインシデントは
