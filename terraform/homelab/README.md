@@ -130,11 +130,22 @@ pveum user token add terraform@pve provider --privsep=0
 
 ### HCP Terraform ワークスペース変数
 
+Homelab variable set (HomeLab プロジェクトに紐付け) に登録する。
+
 | 変数 | 種別 | Sensitive | 説明 |
 |------|------|-----------|------|
-| `PROXMOX_VE_ENDPOINT` | Environment | No | Proxmox API URL |
-| `PROXMOX_VE_API_TOKEN` | Environment | Yes | `terraform@pve!provider=xxx` |
-| `PROXMOX_VE_INSECURE` | Environment | No | 自己署名証明書なら `true` |
+| `PROXMOX_VE_ENDPOINT` | **Environment** | No | Proxmox API URL |
+| `PROXMOX_VE_API_TOKEN` | **Environment** | Yes | `terraform@pve!provider=xxx` |
+| `PROXMOX_VE_INSECURE` | **Environment** | No | 自己署名証明書なら `true` |
+
+> [!IMPORTANT]
+> **種別は Environment。** provider は OS の環境変数として読むため。
+> Terraform 種別にすると「宣言されていない Terraform 変数に値が渡っている」
+> ことになり、plan のたびに `Warning: Value for undeclared variable` が出る。
+>
+> 宣言を足して黙らせることもできるが、provider が使わない変数の
+> `tflint-ignore` 付きダミー宣言が増えるだけになる。実際に 2026-07-26 まで
+> その状態で、`variables.tf` に 3 つのダミー宣言が置かれていた。
 
 ### HCP Terraform Agent
 
