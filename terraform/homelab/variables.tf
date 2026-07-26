@@ -1,27 +1,16 @@
 # =============================================================================
-# Variables provided by HCP Terraform workspace settings
-# (consumed by the provider via environment variables, not referenced directly)
+# Proxmox provider の認証情報 (PROXMOX_VE_ENDPOINT / PROXMOX_VE_API_TOKEN /
+# PROXMOX_VE_INSECURE) はここで宣言しない。
+#
+# provider は OS の環境変数として読むため、HCP 側では Homelab variable set に
+# Environment カテゴリで登録する。Terraform カテゴリにすると、宣言していない
+# 変数に値が渡ることになり plan のたびに次の警告が出る。
+#
+#   Warning: Value for undeclared variable
+#
+# 宣言を足して黙らせることもできるが、provider が使わない変数の
+# tflint-ignore 付きダミー宣言が増えるだけで、実態も分かりにくくなる。
 # =============================================================================
-# tflint-ignore: terraform_unused_declarations
-variable "PROXMOX_VE_API_TOKEN" {
-  description = "Proxmox VE API token (also consumed by the provider via environment variable)"
-  type        = string
-  sensitive   = true
-}
-
-# tflint-ignore: terraform_unused_declarations
-variable "PROXMOX_VE_ENDPOINT" {
-  description = "Proxmox VE API endpoint URL"
-  type        = string
-}
-
-# tflint-ignore: terraform_unused_declarations
-variable "PROXMOX_VE_INSECURE" {
-  description = "Skip TLS verification when talking to the Proxmox VE API"
-  type        = bool
-  default     = true
-}
-
 # =============================================================================
 # Proxmox Configuration Variables
 # =============================================================================
