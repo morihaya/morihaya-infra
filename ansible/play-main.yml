@@ -1,6 +1,8 @@
 ---
 - name: Main play
-  hosts: all
+  # inventory の pending グループ (traefik / pulse / hcp-terraform-agent) は
+  # まだ接続できないため、all ではなく managed を対象にする。
+  hosts: managed
   gather_facts: true
   become: true
   roles:

@@ -1,10 +1,14 @@
 ---
 users:
   - name: "morihaya"
+    # "!!" はパスワードをロックする指定。ログインは SSH 公開鍵のみ。
     password: "!!"
     state: 'present'
     comment: ''
-    groups: 'wheel'
+    # 以前は 'wheel' だったが、これは RHEL 系の管理者グループ名。
+    # 現在の対象は全て Debian / Ubuntu なので存在せず、user モジュールが
+    # 失敗していた。Debian 系の sudo グループに修正する。
+    groups: 'sudo'
     key: "keys/authorized_keys.morihaya"
 
 
