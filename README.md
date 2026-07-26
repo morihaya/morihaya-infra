@@ -64,6 +64,11 @@ This repository contains infrastructure definitions for managing multiple cloud 
   [.terraform-version](.terraform-version) (tfenv/mise compatible)
 - CI runs `terraform fmt -check`, `terraform validate`, `tflint`, and
   `actionlint`; GitHub Actions are pinned to commit SHAs (via pinact)
+- After a PR is merged,
+  [hcp-tf-comment.yml](.github/workflows/hcp-tf-comment.yml) posts the resulting
+  HCP Terraform run links back to that PR. The workspaces have `auto-apply`
+  disabled, so merging alone changes nothing — an unconfirmed run leaves the
+  workspace locked and queues everything behind it
 
 ## 🔑 Local HCP Terraform credentials
 
