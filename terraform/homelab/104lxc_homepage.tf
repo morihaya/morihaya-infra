@@ -6,11 +6,6 @@
 # 初回 apply で description が community-script のバナー HTML から下記の文言へ
 # 書き換わるが、これは表示上のコメントのみで動作に影響はない。
 # =============================================================================
-import {
-  to = proxmox_virtual_environment_container.lxc_104
-  id = "pve/104"
-}
-
 resource "proxmox_virtual_environment_container" "lxc_104" {
   node_name   = var.proxmox_node_name
   vm_id       = 104

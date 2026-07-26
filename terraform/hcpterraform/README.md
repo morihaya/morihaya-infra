@@ -121,7 +121,9 @@ terraform init
 terraform plan
 ```
 
-初回 apply 後は [imports.tf](imports.tf) を削除してよい。
+既存ワークスペースの取り込みは 2026-07-26 に完了済み
+(`Plan: 7 to import, 0 to add, 0 to change, 0 to destroy.`)。
+取り込み用の `imports.tf` は役目を終えたので削除した。
 
 ## 今後
 
