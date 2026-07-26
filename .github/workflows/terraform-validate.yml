@@ -27,6 +27,7 @@ jobs:
           - terraform/aws/common-r53
           - terraform/aws/root
           - terraform/azure
+          - terraform/hcpterraform
           - terraform/homelab
           - terraform/newrelic
           - terraform/pagerduty
