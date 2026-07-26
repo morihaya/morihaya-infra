@@ -1,0 +1,159 @@
+name: HCP Terraform Run Comment
+
+permissions:
+  contents: read
+  pull-requests: write
+  statuses: read
+
+# HCP Terraform は run の状態を legacy commit status API で通知する
+#   context     : Terraform Cloud/morihaya/morihaya-infra-homelab
+#   target_url  : https://app.terraform.io/app/morihaya/.../runs/run-xxxx
+#   description : Terraform plan: 0 to add, 3 to change, 0 to destroy.
+# これを拾い、マージ元の PR へ run へのリンクをコメントする。
+#
+# ワークスペースは auto-apply が無効なため、マージしただけでは適用されない。
+# 承認を忘れるとワークスペースがロックされ、後続の run が滞留する
+# (実際に 2026-06-21 から 1 ヶ月以上滞留した)。その再発防止が目的。
+on:
+  status:
+
+# 複数ワークスペースが同時に status を投げると workflow が並行実行され、
+# どちらも「既存コメント無し」と判定して二重投稿しうる。
+# コミット単位で直列化する (cancel-in-progress は付けない。
+# 後から来た status ほど新しい情報を持つため、全て処理させる)。
+concurrency:
+  group: hcp-tf-comment-${{ github.event.sha }}
+  cancel-in-progress: false
+
+jobs:
+  comment-run-url:
+    name: Comment HCP Terraform run URL
+    runs-on: ubuntu-latest
+    # - HCP Terraform 以外の status (CodeQL 等) を除外
+    # - pending は description が "Terraform plan pending" で情報が無いため、
+    #   plan 結果が確定してから 1 回だけコメントする
+    # - PR ブランチへの speculative plan も status を投げるので、
+    #   main 上のコミットに限定する
+    if: >-
+      startsWith(github.event.context, 'Terraform Cloud/')
+      && github.event.state != 'pending'
+      && contains(github.event.branches.*.name, 'main')
+
+    steps:
+      - name: Find merged PR for this commit
+        id: find-pr
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          COMMIT_SHA: ${{ github.event.sha }}
+        with:
+          script: |
+            const sha = process.env.COMMIT_SHA;
+            core.info(`Looking for merged PR associated with commit ${sha}`);
+
+            const { data: prs } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: sha,
+            });
+
+            // merge commit / squash merge の双方に対応
+            const mergedPr = prs.find(pr => pr.merged_at && pr.merge_commit_sha === sha);
+
+            if (!mergedPr) {
+              core.info('No merged PR found for this commit. Skipping.');
+              core.setOutput('found', 'false');
+              return;
+            }
+
+            core.info(`Found merged PR #${mergedPr.number}: ${mergedPr.title}`);
+            core.setOutput('found', 'true');
+            core.setOutput('pr_number', mergedPr.number.toString());
+
+      - name: Collect HCP Terraform run URLs and upsert comment
+        if: steps.find-pr.outputs.found == 'true'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          PR_NUMBER: ${{ steps.find-pr.outputs.pr_number }}
+          COMMIT_SHA: ${{ github.event.sha }}
+        with:
+          script: |
+            const prNumber = parseInt(process.env.PR_NUMBER, 10);
+            const sha = process.env.COMMIT_SHA;
+            const marker = '<!-- hcp-terraform-runs -->';
+
+            const { data: combined } = await github.rest.repos.getCombinedStatusForRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: sha,
+            });
+
+            const hcpStatuses = combined.statuses.filter(s =>
+              s.context.startsWith('Terraform Cloud/')
+              && s.target_url
+              && s.target_url.startsWith('https://app.terraform.io/')
+            );
+
+            if (hcpStatuses.length === 0) {
+              core.info('No HCP Terraform statuses with target_url found.');
+              return;
+            }
+
+            // target_url で重複排除
+            const seen = new Set();
+            const unique = hcpStatuses.filter(s => {
+              if (seen.has(s.target_url)) return false;
+              seen.add(s.target_url);
+              return true;
+            });
+
+            const rows = unique.map(s => {
+              // "Terraform Cloud/morihaya/morihaya-infra-homelab" → "morihaya-infra-homelab"
+              const name = s.context.replace(/^Terraform Cloud\/[^/]+\//, '');
+              return `| [${name}](${s.target_url}) | ${s.description || ''} |`;
+            });
+
+            const body = [
+              marker,
+              '## HCP Terraform Runs',
+              '',
+              `> マージコミット: \`${sha.substring(0, 7)}\``,
+              '',
+              '| Run | Description |',
+              '|-----|-------------|',
+              ...rows,
+              '',
+              '**auto-apply は無効です。Run リンクから HCP Terraform を開き、Confirm & Apply を実行してください。**',
+              '承認しないままだとワークスペースがロックされ、後続の run が滞留します。',
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              per_page: 100,
+            });
+
+            const existing = comments.find(c =>
+              c.body && c.body.includes(marker)
+              && c.user && c.user.login === 'github-actions[bot]'
+            );
+
+            if (existing) {
+              core.info(`Updating existing comment #${existing.id}`);
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body: body,
+              });
+            } else {
+              core.info('Creating new comment');
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: body,
+              });
+            }
+
+            core.info(`Posted ${unique.length} HCP Terraform run link(s) to PR #${prNumber}`);
