@@ -21,23 +21,21 @@ jobs:
     name: Ansible Lint
     runs-on: ubuntu-latest
 
-    env:
-      # ansible-galaxy は runner にプリインストール済みの collection を見つけて
-      # "Nothing to do" で終わる一方、ansible-lint は ansible-compat によって
-      # 隔離された環境で動くためそれを解決できず syntax-check で落ちる。
-      # 導入先と探索先を同じパスに固定して食い違いを防ぐ。
-      ANSIBLE_COLLECTIONS_PATH: ${{ github.workspace }}/.ansible/collections
-
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
+      # アクションの requirements_file 入力は使わない。ansible-galaxy に
+      # --force を渡せず、runner にプリインストール済みの collection を見て
+      # "Nothing to do" で終わってしまう。その場所は ansible-lint の探索対象
+      # 外なので ansible.posix.authorized_key が解決できず syntax-check で
+      # 落ちる。~/.ansible/collections へ強制的に導入して回避する。
+      - name: Install collection dependencies
+        working-directory: ansible
+        run: ansible-galaxy collection install -r requirements.yml --force
+
       # working_directory を ansible にすることで ansible.cfg が読まれる。
-      # requirements_file は working_directory からの相対パス。
-      # ansible.posix を入れておかないと FQCN モジュールを解決できず、
-      # 検査の精度が落ちる。
       - name: Run ansible-lint
         uses: ansible/ansible-lint@262624cd0ab22a4221293216856c59671ce7aa5e # v26.6.0
         with:
           working_directory: ansible
-          requirements_file: requirements.yml
