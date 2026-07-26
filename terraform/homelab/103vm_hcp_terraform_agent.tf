@@ -31,11 +31,10 @@ resource "proxmox_virtual_environment_vm" "vm_103" {
     iothread     = true
   }
 
-  # CD-ROM (ide2) - Ubuntu ISOがマウントされている
-  cdrom {
-    file_id   = "local:iso/ubuntu-24.04.3-live-server-amd64.iso"
-    interface = "ide2"
-  }
+  # CD-ROM (ide2) はインストール完了後も刺さったままだったが、その ISO は
+  # pve の local ストレージにしか存在せず、このVMのマイグレーションを
+  # 妨げていた。ZFS 移行の事前準備 (docs/zfs-ha-migration.md の Phase 0-3) で
+  # `qm set 103 --delete ide2` により取り外したため、定義ごと削除する。
 
   # ネットワーク設定
   network_device {
@@ -55,8 +54,8 @@ resource "proxmox_virtual_environment_vm" "vm_103" {
     type = "l26"
   }
 
-  # Boot順序
-  boot_order = ["scsi0", "ide2", "net0"]
+  # Boot順序 (ide2 取り外しに伴い scsi0 のみ)
+  boot_order = ["scsi0"]
 
   # QEMU Guest Agent (現在無効)
   #agent {

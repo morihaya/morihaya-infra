@@ -80,7 +80,13 @@ ssh root@192.168.1.2 'for id in 100 101 102 104; do vzdump $id --storage local -
 ssh root@192.168.1.2 'vzdump 103 --storage local --mode stop --compress zstd'
 ```
 
-`ct:105` は pve3 上にあるので pve3 側で取得する。
+`ct:105` は pve3 上にあるので pve3 側で取得する。**取り漏らしやすいので注意**
+(2026-07-26 の実施時、pve 側の 5 台は取得されたが pve3 の `ct:105` は
+未取得だった)。
+
+```bash
+ssh root@192.168.1.11 'vzdump 105 --storage local --mode snapshot --compress zstd'
+```
 
 ### 0-2. ノード間 SSH の疎通確認
 
@@ -100,6 +106,33 @@ ssh root@192.168.1.2 'for h in 192.168.1.10 192.168.1.11; do ssh-keyscan -H $h >
 ```bash
 ssh root@192.168.1.2 'qm set 103 --delete ide2 && qm set 103 --boot order=scsi0'
 ```
+
+> [!WARNING]
+> **VM が起動中だとこの変更は `[PENDING]` に入り、即時反映されない。**
+> `/etc/pve/qemu-server/103.conf` の末尾に次のセクションが付く。
+>
+> ```
+> [PENDING]
+> boot: order=scsi0
+> delete: ide2
+> ```
+>
+> 反映には VM の停止・起動が必要 (ゲスト OS 内からの再起動では不十分)。
+> **保留のままだと稼働中の VM には ISO が刺さったままなので、
+> マイグレーションできず Phase 0-3 の目的を達成できない。**
+>
+> ```bash
+> ssh root@192.168.1.2 'qm stop 103 && qm start 103'
+> ```
+>
+> 停止中は HCP Terraform の Agent も止まるため、plan / apply が実行できない
+> ことに注意。
+
+> [!IMPORTANT]
+> Proxmox の API は保留後の値を返すため、この操作の直後から Terraform に
+> 差分が出る。[103vm_hcp_terraform_agent.tf](../103vm_hcp_terraform_agent.tf)
+> は対応済み (`cdrom` ブロックを削除し `boot_order = ["scsi0"]`)。
+> 未対応のまま apply すると `ide2` と `net0` を boot 順序へ戻そうとする。
 
 > [!IMPORTANT]
 > 103 は HCP Terraform の Agent であり、これが停止している間は Terraform の
