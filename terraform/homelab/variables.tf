@@ -57,15 +57,15 @@ variable "proxmox_cluster_nodes" {
 # ゲストを起動しようとして失敗する。
 # =============================================================================
 variable "enable_ha" {
-  description = "Enable ZFS storage registration, storage replication and HA resources. Only set to true AFTER the local-lvm to ZFS migration described in docs/zfs-ha-migration.md is complete on every node."
+  description = "Enable ZFS storage registration, storage replication and HA resources. The local-lvm to ZFS migration completed on 2026-07-26, so this is now on by default."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "guest_datastore_id" {
-  description = "Datastore holding guest root disks. Switch to the ZFS storage id once the migration is complete; storage replication only works on ZFS."
+  description = "Datastore holding guest root disks. Storage replication only works on ZFS. Migrated from local-lvm on 2026-07-26; local-lvm no longer exists on any node."
   type        = string
-  default     = "local-lvm"
+  default     = "local-zfs"
 }
 
 variable "zfs_storage_id" {
