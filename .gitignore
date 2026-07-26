@@ -33,3 +33,7 @@ override.tf.json
 
 # Local environment files
 .env
+
+# mise のローカル設定 (マシン固有。TF_CLI_CONFIG_FILE などを設定する)
+mise.local.toml
+.mise.local.toml

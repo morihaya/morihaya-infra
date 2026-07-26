@@ -30,7 +30,7 @@ resource "proxmox_virtual_environment_container" "lxc_101" {
   }
 
   disk {
-    datastore_id = "local-lvm"
+    datastore_id = var.guest_datastore_id
     size         = 4
   }
 
@@ -66,6 +66,7 @@ resource "proxmox_virtual_environment_container" "lxc_101" {
     ignore_changes = [
       initialization,
       operating_system,
+      node_name, # HA によるフェイルオーバー先を Terraform で巻き戻さない
     ]
   }
 }

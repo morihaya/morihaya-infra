@@ -8,6 +8,8 @@ resource "proxmox_virtual_environment_container" "lxc_100" {
 
   unprivileged = true
   started      = true
+  # DNS と DHCP を兼ねる最重要コンテナのため、明示的に自動起動を宣言する
+  start_on_boot = true
 
   features {
     nesting = true
@@ -29,7 +31,7 @@ resource "proxmox_virtual_environment_container" "lxc_100" {
   }
 
   disk {
-    datastore_id = "local-lvm"
+    datastore_id = var.guest_datastore_id
     size         = 8
   }
 
@@ -44,7 +46,11 @@ resource "proxmox_virtual_environment_container" "lxc_100" {
 
     ip_config {
       ipv4 {
-        address = "192.168.1.4/24"
+        # 実機は /32 (`ip=192.168.1.4/32`)。gw 経由のホストルートで動作しては
+        # いるが他のコンテナは /24 であり、意図しない設定の可能性が高い。
+        # ignore_changes により Terraform からは矯正されないため、直す場合は
+        # Proxmox 側で /24 に変更すること。
+        address = "192.168.1.4/32"
         gateway = "192.168.1.1"
       }
     }
@@ -59,6 +65,7 @@ resource "proxmox_virtual_environment_container" "lxc_100" {
     ignore_changes = [
       initialization,
       operating_system,
+      node_name, # HA によるフェイルオーバー先を Terraform で巻き戻さない
     ]
   }
 }
