@@ -7,10 +7,6 @@ locals {
       name    = "pve.home.morihaya.tech"
       records = ["192.168.1.6"] # 実IPは 192.168.1.2 だがTraefik経由でアクセス
     }
-    ceph = {
-      name    = "ceph.home.morihaya.tech"
-      records = ["192.168.1.3"]
-    }
     dns = {
       name    = "dns.home.morihaya.tech"
       records = ["192.168.1.6"] # 実IPは 192.168.1.4 だがTraefik経由でアクセス
