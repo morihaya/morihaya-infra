@@ -1,9 +1,8 @@
 # =============================================================================
 # Variables provided by the HCP Terraform workspace
 # =============================================================================
-# tflint-ignore: terraform_unused_declarations
 variable "TFE_TOKEN" {
-  description = "HCP Terraform API token with org owner permissions (also consumed by the provider via environment variable)"
+  description = "HCP Terraform API token with org owner permissions. Set as a sensitive Terraform variable on the morihaya-infra workspace. Leave empty to fall back to the provider's own discovery (TFE_TOKEN environment variable, then the Terraform CLI config credentials) — that is what local runs use."
   type        = string
   sensitive   = true
   default     = ""

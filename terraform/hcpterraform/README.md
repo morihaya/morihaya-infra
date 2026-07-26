@@ -61,7 +61,23 @@ HCP は state の保管場所としてのみ使われ、plan / apply は手元�
 
 | 変数 | 種別 | Sensitive | 説明 |
 |------|------|-----------|------|
-| `TFE_TOKEN` | Environment | Yes | org owner 権限の API トークン |
+| `TFE_TOKEN` | **Terraform** | Yes | org owner 権限の API トークン |
+
+種別が Environment ではなく **Terraform** である点に注意。`tfe` provider は
+環境変数 `TFE_TOKEN` を読む仕様だが、それに頼ると「変数は設定したのに認証が
+通らない」という分かりにくい失敗をする。[providers.tf](providers.tf) で
+`token = var.TFE_TOKEN` と明示的に渡す形にしてある。
+
+空にしておくと provider 標準の探索 (環境変数 → Terraform CLI config の
+credentials) にフォールバックする。手元から実行する場合はこの経路になる。
+
+> [!NOTE]
+> **新規ワークスペースは初回だけ手動で run をキューする必要がある。**
+> `queue_all_runs = false` の場合、HCP は「一度も手動で run がキューされて
+> いないワークスペース」では webhook 起因の run をキューしない。
+> 実際にこのワークスペースは作成から半年間 run が 0 件で、VCS 連携の設定は
+> 正しいのに PR を出しても plan が走らなかった。UI から一度 "Start new run"
+> すれば以降は自動で走る。
 
 ## 変数の値は管理しない
 
