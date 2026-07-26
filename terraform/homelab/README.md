@@ -97,7 +97,7 @@ pveum user add terraform@pve
 ```
 
 ```bash
-pveum role add Terraform -privs "Datastore.Allocate,Datastore.AllocateSpace,Datastore.AllocateTemplate,Datastore.Audit,Pool.Allocate,Pool.Audit,SDN.Audit,SDN.Use,Sys.Audit,Sys.Console,Sys.Modify,VM.Allocate,VM.Audit,VM.Clone,VM.Config.CDROM,VM.Config.CPU,VM.Config.Cloudinit,VM.Config.Disk,VM.Config.HWType,VM.Config.Memory,VM.Config.Network,VM.Config.Options,VM.Console,VM.Migrate,VM.PowerMgmt,VM.Snapshot,VM.Snapshot.Rollback"
+pveum role add Terraform -privs "Datastore.Allocate,Datastore.AllocateSpace,Datastore.AllocateTemplate,Datastore.Audit,Pool.Allocate,Pool.Audit,SDN.Audit,SDN.Use,Sys.Audit,Sys.Console,Sys.Modify,VM.Allocate,VM.Audit,VM.Clone,VM.Config.CDROM,VM.Config.CPU,VM.Config.Cloudinit,VM.Config.Disk,VM.Config.HWType,VM.Config.Memory,VM.Config.Network,VM.Config.Options,VM.Console,VM.Migrate,VM.PowerMgmt,VM.Replicate,VM.Snapshot,VM.Snapshot.Rollback"
 ```
 
 ```bash
@@ -108,9 +108,25 @@ pveum aclmod / -user terraform@pve -role Terraform
 pveum user token add terraform@pve provider --privsep=0
 ```
 
-> [!NOTE]
-> HA とレプリケーションを Terraform から管理する際に権限不足なら apply 時に
-> 403 が返る。その時点で `pveum role modify` で権限を足すこと。
+> [!IMPORTANT]
+> **`VM.Replicate` は `pvesr` のレプリケーションジョブ作成に必須。**
+> 当初の権限一覧には含まれておらず、2026-07-26 の HA 有効化 apply が
+> 次のエラーで失敗した。
+>
+> ```
+> error creating Replication: received an HTTP 403 response
+> Reason: Forbidden (Permission check failed (/vms/100, VM.Replicate))
+> ```
+>
+> 既存ロールへ後から足す場合は `--append` を使う (付けないと権限一覧が
+> 置き換わる)。
+>
+> ```bash
+> pveum role modify Terraform --privs VM.Replicate --append 1
+> ```
+>
+> HA リソースとルールの操作には `Sys.Console` が要るが、これは当初から
+> 含まれている。
 
 ### HCP Terraform ワークスペース変数
 
