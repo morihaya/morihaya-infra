@@ -125,12 +125,15 @@ locals {
     # pagerduty と tailscale は VCS 連携が無く execution_mode = local。
     # HCP は state の保管場所としてのみ使われ、plan/apply は手元で走る。
     pagerduty = {
-      name                   = "morihaya-infra-pagerduty"
-      description            = null
-      project_id             = data.tfe_project.default.id
-      working_directory      = ""
-      trigger_patterns       = []
-      terraform_version      = "1.0.8"
+      name              = "morihaya-infra-pagerduty"
+      description       = null
+      project_id        = data.tfe_project.default.id
+      working_directory = ""
+      trigger_patterns  = []
+      # 1.0.8 のままだと、手元の CLI で state を書き換える操作が
+      # 「remote Terraform version と一致しない」で弾かれる。
+      # execution_mode = local なので plan/apply は手元で走る。
+      terraform_version      = "~>1.14.0"
       execution_mode         = "local"
       auto_apply             = false
       auto_apply_run_trigger = false
