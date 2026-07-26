@@ -202,11 +202,39 @@ ssh root@192.168.1.2 'ha-manager remove ct:105'
 
 ### 2-2. `ct:105` を pve2 の ZFS へ退避
 
+> [!IMPORTANT]
+> **`pct` / `qm` はノードローカルのコマンドで、そのゲストを実際にホストして
+> いるノード上で実行する必要がある。** `ct:105` は pve3 にいるので pve3
+> (192.168.1.11) から実行する。pve で実行すると次のエラーになる。
+>
+> ```
+> Configuration file 'nodes/pve/lxc/105.conf' does not exist
+> ```
+
 ```bash
-ssh root@192.168.1.2 'pct migrate 105 pve2 --restart --target-storage local-zfs'
+ssh root@192.168.1.11 'pct migrate 105 pve2 --restart --target-storage local-zfs'
 ```
 
 ### 2-3. pve3 を ZFS 化
+
+> [!WARNING]
+> **この `pvesm set` は 2-2 の移行が完了してから実行すること。**
+> 先に実行すると `ct:105` のディスク (`local-lvm:vm-105-disk-0`) を pve3 から
+> 解決できなくなり、2-2 が次のエラーで失敗する。
+>
+> ```
+> ERROR: migration aborted: storage 'local-lvm' is not available on node 'pve3'
+> ```
+>
+> 稼働中のコンテナ自体は影響を受けない (マウント済みのため) が、移行できなく
+> なる。その状態になったら次で戻してから 2-2 をやり直す。
+>
+> ```bash
+> ssh root@192.168.1.2 'pvesm set local-lvm --nodes pve,pve3'
+> ```
+>
+> 原則は「**移行元ノードから `local-lvm` を外すのは、そのノードのゲストを
+> 全て退避し終えた後**」。Phase 3 の 3-2 も同じ。
 
 ```bash
 ssh root@192.168.1.2 'pvesm set local-lvm --nodes pve'
@@ -225,7 +253,7 @@ ARC 制限 (1GB) も 1-3 と同様に pve3 へ適用する。
 ### 2-4. `ct:105` を pve3 へ戻す
 
 ```bash
-ssh root@192.168.1.2 'pct migrate 105 pve3 --restart --target-storage local-zfs'
+ssh root@192.168.1.10 'pct migrate 105 pve3 --restart --target-storage local-zfs'
 ```
 
 ---
@@ -278,12 +306,19 @@ ssh root@192.168.1.2 'pvesm remove local-lvm'
 
 ### 3-3. ゲストを pve へ戻す
 
+100 / 101 / 102 は pve3 に、103 / 104 は pve2 に退避しているので、
+それぞれの退避先ノードから実行する。
+
 ```bash
-ssh root@192.168.1.2 'for id in 100 101 102 104; do pct migrate $id pve --restart; done'
+ssh root@192.168.1.11 'for id in 100 101 102; do pct migrate $id pve --restart; done'
 ```
 
 ```bash
-ssh root@192.168.1.2 'qm migrate 103 pve'
+ssh root@192.168.1.10 'pct migrate 104 pve --restart'
+```
+
+```bash
+ssh root@192.168.1.10 'qm migrate 103 pve'
 ```
 
 `ct:105` は pve3 が定位置なので戻さない。
