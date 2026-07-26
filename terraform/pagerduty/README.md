@@ -11,33 +11,33 @@
 | `pagerduty_service.default` | "morihaya"。New Relic の通知先 |
 | `pagerduty_service.pulse_homelab` | **"Pulse at HomeLab"**。自宅 Proxmox の監視 |
 
-state は HCP Terraform (`morihaya-infra-pagerduty`) にあるが、**execution mode は
-`local`** なので plan / apply は手元で走る。VCS 連携も無いため、PR をマージしても
-run は自動起動しない。
-
 ## 実行
 
-認証情報は環境変数で渡す。
+**HCP Terraform の VCS 駆動**。`terraform/pagerduty/*.tf` を変更した PR で
+speculative plan が走り、マージすると run が起動する。`auto_apply` は無効なので
+HCP の UI で Confirm & Apply が必要。
 
-```bash
-export TF_VAR_pagerduty_token=...
-```
+以前は `execution_mode = local` で手元から `terraform apply` していたが、
+2026-07-26 に他のワークスペースと揃えて remote へ移行した。
 
-```bash
-export TF_VAR_mail_own=...
-```
+必要な変数は **PagerDuty variable set** に登録済み。どちらもコード内で `var.*`
+として参照しているため Terraform カテゴリである必要がある (env では読まれない)。
 
-```bash
-terraform apply
-```
+| 変数 | カテゴリ | Sensitive |
+|------|----------|-----------|
+| `pagerduty_token` | Terraform | Yes |
+| `mail_own` | Terraform | No |
 
 ## Pulse からの通知設定
 
 `pagerduty_service_integration.pulse` が Events API v2 の受け口で、その
-`integration_key` が Pulse 側の `routing_key` になる。apply 後に取り出す。
+`integration_key` が Pulse 側の `routing_key` になる。apply 後、HCP の
+ワークスペース Outputs から取り出す (sensitive なので明示的に表示させる)。
+
+手元から読む場合は次のとおり。
 
 ```bash
-terraform output -raw pulse_integration_key
+terraform -chdir=terraform/pagerduty output -raw pulse_integration_key
 ```
 
 Pulse (ct:101 / 192.168.1.5) の Settings → Alerts → Webhook で、送信先を
