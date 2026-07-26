@@ -65,6 +65,23 @@ This repository contains infrastructure definitions for managing multiple cloud 
 - CI runs `terraform fmt -check`, `terraform validate`, `tflint`, and
   `actionlint`; GitHub Actions are pinned to commit SHAs (via pinact)
 
+## 🔑 Local HCP Terraform credentials
+
+State lives in the personal org `morihaya`. If the default credentials file
+(`~/.terraform.d/credentials.tfrc.json`) holds a different account's token,
+`terraform init` fails with `organization "morihaya" ... not found` — this is an
+account mismatch, not an expired token.
+
+Point Terraform at the right credentials file with `TF_CLI_CONFIG_FILE`. The
+committed `.gitignore` reserves `mise.local.toml` for this machine-local setting:
+
+```toml
+[env]
+TF_CLI_CONFIG_FILE = "{{env.HOME}}/.terraformrc-morihaya"
+```
+
+New checkouts need `mise trust` once before mise will read it.
+
 ## 📝 License
 
 This repository is public for educational and portfolio purposes.

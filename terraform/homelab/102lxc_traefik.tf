@@ -6,9 +6,11 @@ resource "proxmox_virtual_environment_container" "lxc_102" {
   vm_id       = 102
   description = "LXC Container 102 - Managed by Terraform"
 
-  unprivileged  = true
-  started       = true
-  start_on_boot = false
+  unprivileged = true
+  started      = true
+  # 2026-07-25 の pve 障害時、このコンテナだけ onboot=0 のためノード復帰後も
+  # 自動起動せず、手動起動まで Traefik が停止したままだった。
+  start_on_boot = true
 
   features {
     nesting = true
@@ -30,7 +32,7 @@ resource "proxmox_virtual_environment_container" "lxc_102" {
   }
 
   disk {
-    datastore_id = "local-lvm"
+    datastore_id = var.guest_datastore_id
     size         = 8
   }
 
@@ -60,6 +62,7 @@ resource "proxmox_virtual_environment_container" "lxc_102" {
     ignore_changes = [
       initialization,
       operating_system,
+      node_name, # HA によるフェイルオーバー先を Terraform で巻き戻さない
     ]
   }
 }

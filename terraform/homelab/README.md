@@ -1,114 +1,145 @@
 # Homelab - Proxmox Terraform Configuration
 
-This directory contains Terraform configuration for managing Proxmox VE resources in the homelab environment.
+自宅の Proxmox VE クラスタ `morihaya` を管理する Terraform 設定。
 
 ## Overview
 
-- **Provider**: [bpg/proxmox](https://registry.terraform.io/providers/bpg/proxmox/latest) v0.91.0
-- **Backend**: HCP Terraform (Terraform Cloud) with Agent
-- **Node Count**: 1 Proxmox node
-- **LXC Containers**: 2 existing containers (to be imported)
+- **Provider**: [bpg/proxmox](https://registry.terraform.io/providers/bpg/proxmox/latest) `~> 0.111.0`
+- **Backend**: HCP Terraform (org `morihaya` / workspace `morihaya-infra-homelab`)
+- **Execution mode**: Agent (VM 103 の HCP Terraform Agent 経由)
+- **Proxmox VE**: 9.1
 
-## Prerequisites
+### クラスタ構成
 
-### 1. HCP Terraform Setup
+| ノード | IP | CPU | メモリ | ディスク |
+|--------|-----|-----|--------|----------|
+| `pve`  | 192.168.1.2  | 4 core | 16GB  | NVMe 477GB |
+| `pve2` | 192.168.1.10 | AMD E1-2500 2 core | 7.5GB | SATA SSD 480GB |
+| `pve3` | 192.168.1.11 | i5-7400T 4 core | 8GB | NVMe 256GB |
 
-1. Create a workspace in HCP Terraform: `morihaya-infra-homelab`
-2. Set the workspace execution mode to "Agent"
-3. Deploy an HCP Terraform Agent in your homelab network
+### 管理対象ゲスト
 
-### 2. Proxmox API Token
+| ID | 種別 | 名前 | IP | 定位置 | 用途 |
+|----|------|------|-----|--------|------|
+| 100 | LXC | dns01 | 192.168.1.4 | pve | AdGuard Home (DNS + DHCP) |
+| 101 | LXC | pulse | 192.168.1.5 | pve | Proxmox 監視 |
+| 102 | LXC | traefik | 192.168.1.6 | pve | リバースプロキシ |
+| 103 | VM  | hcp-terraform-agent | DHCP | pve | HCP Terraform Agent |
+| 104 | LXC | homepage | 192.168.1.8 | pve | ダッシュボード |
+| 105 | LXC | gh-runner | 192.168.1.9 | pve3 | GitHub Actions セルフホストランナー |
 
-Create an API token on your Proxmox node:
+## High Availability
 
-```bash
-# Create user
-pveum user add terraform@pve
+> [!IMPORTANT]
+> **現状 HA は未稼働。** 2026-07-25 に pve が停止した際、DNS / DHCP / Traefik が
+> 揃って落ちた。3 ノードのクラスタは正常だったが、HA 登録されていたのが
+> `ct:105` の 1 件のみで、かつ共有ストレージもレプリケーションも無かったため。
 
-# Create role with necessary privileges
-pveum role add Terraform -privs "Datastore.Allocate,Datastore.AllocateSpace,Datastore.AllocateTemplate,Datastore.Audit,Pool.Allocate,Pool.Audit,SDN.Audit,SDN.Use,Sys.Audit,Sys.Console,Sys.Modify,VM.Allocate,VM.Audit,VM.Clone,VM.Config.CDROM,VM.Config.CPU,VM.Config.Cloudinit,VM.Config.Disk,VM.Config.HWType,VM.Config.Memory,VM.Config.Network,VM.Config.Options,VM.Console,VM.Migrate,VM.PowerMgmt,VM.Snapshot,VM.Snapshot.Rollback"
+有効化には ZFS への移行 (破壊的作業) が必要で、手順は
+[docs/zfs-ha-migration.md](docs/zfs-ha-migration.md) にまとめてある。
+移行が全ノードで完了してから、ワークスペース変数を以下に変更して apply する。
 
-# Assign role to user
-pveum aclmod / -user terraform@pve -role Terraform
+| 変数 | 移行前 | 移行後 |
+|------|--------|--------|
+| `guest_datastore_id` | `local-lvm` | `local-zfs` |
+| `enable_ha` | `false` | `true` |
 
-# Create API token
-pveum user token add terraform@pve provider --privsep=0
-```
+`enable_ha = false` の間、[ha.tf](ha.tf) のリソースは一切作られない。
 
-### 3. HCP Terraform Variables
-
-Set the following variables in your HCP Terraform workspace:
-
-| Variable | Type | Sensitive | Description |
-|----------|------|-----------|-------------|
-| `PROXMOX_VE_ENDPOINT` | Environment | No | Proxmox API URL (e.g., `https://192.168.1.100:8006/`) |
-| `PROXMOX_VE_API_TOKEN` | Environment | Yes | API Token (e.g., `terraform@pve!provider=xxx-xxx-xxx`) |
-| `PROXMOX_VE_INSECURE` | Environment | No | Set to `true` if using self-signed certificate |
-
-## HCP Terraform Agent Setup
-
-### Deploy Agent with Docker
-
-```bash
-docker run -d \
-  --name tfc-agent \
-  --restart unless-stopped \
-  -e TFC_AGENT_TOKEN=<your-agent-token> \
-  -e TFC_AGENT_NAME=homelab-agent \
-  hashicorp/tfc-agent:latest
-```
-
-Or with Docker Compose:
-
-```yaml
-version: "3.8"
-services:
-  tfc-agent:
-    image: hashicorp/tfc-agent:latest
-    container_name: tfc-agent
-    restart: unless-stopped
-    environment:
-      - TFC_AGENT_TOKEN=${TFC_AGENT_TOKEN}
-      - TFC_AGENT_NAME=homelab-agent
-```
-
-## Importing Existing LXC Containers
-
-After running `terraform init`, import your existing LXC containers:
-
-```bash
-# Import LXC container with VM ID 100
-terraform import proxmox_virtual_environment_container.lxc_1 pve/100
-
-# Import LXC container with VM ID 101
-terraform import proxmox_virtual_environment_container.lxc_2 pve/101
-```
-
-**Note**: Replace `pve` with your actual node name and `100`/`101` with your actual VM IDs.
-
-## Usage
-
-```bash
-# Initialize Terraform
-terraform init
-
-# Import existing resources (see above)
-
-# Plan changes
-terraform plan
-
-# Apply changes
-terraform apply
-```
+HA 有効時のフェイルオーバー設計は [ha.tf](ha.tf) の `local.ha_guests` を参照。
+共有ストレージが無いため、レプリカを持つ 2 ノードにだけ移動を許す
+`strict = true` の node-affinity ルールを併用している。
 
 ## File Structure
 
 ```
 homelab/
-├── README.md           # This file
-├── backend.tf          # HCP Terraform backend configuration
-├── main.tf             # Provider configuration
-├── variables.tf        # Input variables
-├── lxc.tf              # LXC container resources
-└── outputs.tf          # Output values
+├── README.md                      # このファイル
+├── versions.tf                    # terraform ブロック / cloud backend / provider 制約
+├── providers.tf                   # provider 設定
+├── variables.tf                   # 入力変数
+├── ha.tf                          # ZFS ストレージ・レプリケーション・HA (enable_ha でゲート)
+├── 100lxc_dns01.tf                # 各ゲストの定義 (1 ファイル 1 ゲスト)
+├── 101lxc_pulse.tf
+├── 102lxc_traefik.tf
+├── 103vm_hcp_terraform_agent.tf
+├── 104lxc_homepage.tf
+├── 105lxc_gh_runner.tf
+└── docs/
+    └── zfs-ha-migration.md        # ZFS 移行と HA 有効化の手順書
+```
+
+## 設定上の約束ごと
+
+- HA でフェイルオーバーしうるゲストは `node_name` を `ignore_changes` に入れる。
+  入れないと HA が移動させた直後に Terraform が元ノードへ戻そうとする。
+  ただし **これだけでは不十分**。bpg プロバイダは state の `node_name` の
+  ノードにしかコンテナを問い合わせないため、フェイルオーバー後の plan は
+  「削除された → 作り直す」になる (プロバイダ側の Known Issue)。
+  復旧手順は [docs/zfs-ha-migration.md](docs/zfs-ha-migration.md) の
+  「フェイルオーバー後の state 復旧」を参照。
+- ゲストのディスク配置は `var.guest_datastore_id` を通す。実機の状態と
+  ズレたまま apply するとディスクの再作成が走るため、ストレージ移行と
+  変数変更は必ずセットで行う。
+- `initialization` と `operating_system` は手動作成のコンテナを import した
+  経緯から `ignore_changes` に入っている。IP を変えたい場合は Proxmox 側で
+  変更すること。
+
+## Prerequisites
+
+### Proxmox API Token
+
+```bash
+pveum user add terraform@pve
+```
+
+```bash
+pveum role add Terraform -privs "Datastore.Allocate,Datastore.AllocateSpace,Datastore.AllocateTemplate,Datastore.Audit,Pool.Allocate,Pool.Audit,SDN.Audit,SDN.Use,Sys.Audit,Sys.Console,Sys.Modify,VM.Allocate,VM.Audit,VM.Clone,VM.Config.CDROM,VM.Config.CPU,VM.Config.Cloudinit,VM.Config.Disk,VM.Config.HWType,VM.Config.Memory,VM.Config.Network,VM.Config.Options,VM.Console,VM.Migrate,VM.PowerMgmt,VM.Snapshot,VM.Snapshot.Rollback"
+```
+
+```bash
+pveum aclmod / -user terraform@pve -role Terraform
+```
+
+```bash
+pveum user token add terraform@pve provider --privsep=0
+```
+
+> [!NOTE]
+> HA とレプリケーションを Terraform から管理する際に権限不足なら apply 時に
+> 403 が返る。その時点で `pveum role modify` で権限を足すこと。
+
+### HCP Terraform ワークスペース変数
+
+| 変数 | 種別 | Sensitive | 説明 |
+|------|------|-----------|------|
+| `PROXMOX_VE_ENDPOINT` | Environment | No | Proxmox API URL |
+| `PROXMOX_VE_API_TOKEN` | Environment | Yes | `terraform@pve!provider=xxx` |
+| `PROXMOX_VE_INSECURE` | Environment | No | 自己署名証明書なら `true` |
+| `guest_datastore_id` | Terraform | No | ゲストディスクの配置先 (既定 `local-lvm`) |
+| `enable_ha` | Terraform | No | HA とレプリケーションの有効化 (既定 `false`) |
+
+### HCP Terraform Agent
+
+```bash
+docker run -d --name tfc-agent --restart unless-stopped -e TFC_AGENT_TOKEN=<your-agent-token> -e TFC_AGENT_NAME=homelab-agent hashicorp/tfc-agent:latest
+```
+
+> [!WARNING]
+> Agent は VM 103 上で動いており、その 103 は pve 上にある。つまり
+> **pve が落ちると Terraform の plan / apply ができなくなる**。
+> ZFS 移行後は 103 を pve 以外のノードへ移すことを推奨する。
+
+## Usage
+
+```bash
+terraform init
+```
+
+```bash
+terraform plan
+```
+
+```bash
+terraform apply
 ```

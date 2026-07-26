@@ -25,7 +25,7 @@ resource "proxmox_virtual_environment_vm" "vm_103" {
 
   # ブートディスク (scsi0)
   disk {
-    datastore_id = "local-lvm"
+    datastore_id = var.guest_datastore_id
     interface    = "scsi0"
     size         = 32
     iothread     = true
