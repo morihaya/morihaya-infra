@@ -1,8 +1,37 @@
 # OpenClaw 自宅執事エージェント構築 — 引き継ぎ計画書
 
 - 作成: 2026-07-29(Claude Fable 5 セッションからの引き継ぎ用)
+- 更新: 2026-07-30(Phase 1 マージ済み、Phase 2 の VM コード化まで完了)
 - 目的: Proxmox 環境に OpenClaw を導入し、家族用 Slack に常駐する執事型 AI エージェントを構築する
-- 状態: **設計・AWS 側 Terraform 実装まで完了(未コミット)**。以降の作業をこのドキュメントに従って進める
+- 状態: **AWS 側は #84 でマージ済み。Proxmox VM 側 (Phase 2) は別 PR で実装中**
+
+## 0. 現在の進捗
+
+| Phase | 状態 | 補足 |
+|---|---|---|
+| 1. AWS 土台 | **コードは #84 でマージ済み** | plan は `3 added`。auto-apply 無効なので main の run を HCP UI で Confirm & Apply する |
+| 2. VM 構築 | **コード実装済み・apply 前** | `terraform/homelab/106vm_openclaw.tf`、HA 登録込み |
+| 3. OpenClaw セットアップ | 未着手 | VM 起動後 |
+| 4. 執事化・運用 | 未着手 | |
+
+> [!NOTE]
+> Phase 1 と Phase 2 は当初 1 つの PR にまとめていたが、#84 が AWS 分だけの
+> 状態でマージされたため、Phase 2 は別ブランチの PR に切り出した。
+> ワークスペースが別 (`aws-root` / `homelab`) なので分けるほうが plan も読みやすい。
+
+### Phase 2 で確定した仕様(2026-07-30 にユーザー判断)
+
+当初案の 4vCPU/8GB は**クラスタの物理メモリに収まらない**ことが判明したため見直した。
+`pve` は既に約 8.3GB/16GB 使用済み、`pve3` は 8GB しかない。OpenClaw の推論は
+すべて Bedrock 側なのでローカル資源はほぼ不要で、8GB は「ブラウザ自動化を使う場合」の数字。
+
+| 項目 | 決定 |
+|---|---|
+| スペック | **2vCPU / 4GB / 40GB**(ブラウザ自動化なし前提) |
+| 配置ノード | **pve3**(105 のみで最も空きがある) |
+| 作成方法 | **Terraform で新規作成**(Debian 12 genericcloud + cloud-init) |
+| IP | **192.168.1.12/24** 固定 |
+| HA | primary `pve3` / standby **`pve`**(pve2 は 104+105 の standby 兼任で容量不足) |
 
 ## 1. 決定事項とその理由
 
@@ -34,15 +63,21 @@
 ## 3. 残作業(推奨順)
 
 ### Phase 1: AWS 土台の反映
-1. ブランチを切り、上記変更をコミット・push・PR(コミット規約: `feat(aws): ...` 形式・日本語、直近の git log 参照)
-2. HCP Terraform の run を **confirm まで**確認(過去に confirm 忘れでワークスペースが長期ロックされた事故あり)
-3. apply 後、コンソールか `aws iam create-access-key --user-name openclaw-butler` でアクセスキー発行
-4. Bedrock コンソール(ap-northeast-1)で Anthropic モデルの Model access を有効化(忘れると 403)
+1. ~~ブランチを切り、上記変更をコミット・push・PR~~ → **完了。#84 としてマージ済み**
+2. **[要対応] main の run を Confirm & Apply する**。plan は `3 added, 0 changed, 0 destroyed` で意図どおり。auto-apply は無効なので UI 操作が必須(過去に confirm 忘れでワークスペースが長期ロックされた事故あり)
+3. **[要対応] アクセスキーを発行する**。この Mac に AWS の認証情報が無いため CLI からは実行できない。コンソールか `aws iam create-access-key --user-name openclaw-butler`
+4. **[要対応] Bedrock コンソール(ap-northeast-1)で Anthropic モデルの Model access を有効化**(忘れると 403)
 
 ### Phase 2: VM 構築(Proxmox)
-1. Debian 12 VM(4vCPU/8GB/40GB〜)を作成。既存の ZFS + pvesr レプリケーション対象に載せる(HA 設計は別途メモリ/ドキュメント参照)
-2. Docker Engine + Compose v2 導入
-3. FW/VLAN: outbound のみ許可。NAS・Proxmox 管理面への到達は遮断。inbound は全閉じ(Socket Mode のため不要)
+
+コードは実装済み(`terraform/homelab/106vm_openclaw.tf` + `ha.tf` の VM 対応)。残りは以下。
+
+1. **apply 前に `192.168.1.12` が空いていることを確認する**。既存ゲストは .4/.5/.6/.8/.9 を使用し .7 は用途不明のため .12 を選定した。AdGuard Home(LXC 100)の DHCP プール範囲外であることも併せて確認し、必要なら予約する
+2. homelab ワークスペースの apply を実行(HCP Agent 実行 = VM 103 経由)
+3. cloud image のダウンロードは初回 apply 時に pve3 の `local` へ行われる。`import` content type ではなく `iso` として保存しているため、datastore の content 設定変更は不要
+4. VM 起動後 SSH(`morihaya@192.168.1.12`、鍵は ansible の common ロールと共用)→ Docker Engine + Compose v2 導入
+5. `qemu-guest-agent` を導入(cloud image に同梱されていないため、入れてから `agent` ブロックを有効化する)。ansible の common ロール適用も併せて行う
+6. FW/VLAN: outbound のみ許可。NAS・Proxmox 管理面への到達は遮断。inbound は全閉じ(Socket Mode のため不要)
 
 ### Phase 3: OpenClaw セットアップ
 1. 公式 docker-compose で起動、`.env` に `AWS_REGION=ap-northeast-1` とアクセスキー

@@ -27,6 +27,7 @@
 | 103 | VM  | hcp-terraform-agent | DHCP | pve | HCP Terraform Agent |
 | 104 | LXC | homepage | 192.168.1.8 | pve | ダッシュボード |
 | 105 | LXC | gh-runner | 192.168.1.9 | pve3 | GitHub Actions セルフホストランナー |
+| 106 | VM  | openclaw | 192.168.1.12 | pve3 | OpenClaw 執事エージェント (Slack + Bedrock) |
 
 ## High Availability
 
@@ -68,6 +69,7 @@ homelab/
 ├── 103vm_hcp_terraform_agent.tf
 ├── 104lxc_homepage.tf
 ├── 105lxc_gh_runner.tf
+├── 106vm_openclaw.tf              # 唯一 Terraform で新規作成した VM (cloud-init)
 └── docs/
     └── zfs-ha-migration.md        # ZFS 移行と HA 有効化の手順書
 ```
@@ -86,7 +88,11 @@ homelab/
   変数変更は必ずセットで行う。
 - `initialization` と `operating_system` は手動作成のコンテナを import した
   経緯から `ignore_changes` に入っている。IP を変えたい場合は Proxmox 側で
-  変更すること。
+  変更すること。**ただし 106 は Terraform で新規作成したため対象外**で、
+  cloud-init の設定はコードが正となる。
+- HA リソース ID には `ct:` / `vm:` の種別プレフィックスが必要。
+  `local.ha_guests` の `type` は省略時 `ct` として扱うため、LXC のエントリには
+  書かない (106 のみ `type = "vm"`)。
 
 ## Prerequisites
 
