@@ -6,6 +6,7 @@ Using:
 - Managed by terraform
   - AWS Budget
   - Amazon SNS(Simple Notification Service)
+  - IAM (MFA enforcement, OpenClaw butler user for Bedrock)
 - Not managed by terraform
   - AWS Control Tower (not managed by terraform)
   - AWS Chatbot (not managed by terraform)
