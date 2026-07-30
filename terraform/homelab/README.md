@@ -93,6 +93,22 @@ homelab/
 - HA リソース ID には `ct:` / `vm:` の種別プレフィックスが必要。
   `local.ha_guests` の `type` は省略時 `ct` として扱うため、LXC のエントリには
   書かない (106 のみ `type = "vm"`)。
+- **ディスクの `import_from` は `images` か `import` タイプのストレージにある
+  ファイルしか受け付けない。** `local` に content_type = `iso` で置いた cloud
+  image を指定すると apply が次のエラーで失敗する。
+  ```
+  scsi0: local:iso/debian-12-genericcloud-amd64.img has wrong type 'iso'
+  - needs to be 'images' or 'import'
+  ```
+  そのため cloud image は専用の `image-import` ストレージ
+  ([106vm_openclaw.tf](106vm_openclaw.tf) の `proxmox_storage_directory`) に
+  `import` タイプで置いている。`local` に `import` を足す手もあるが、`local` は
+  全ノードの ISO・バックアップ・コンテナテンプレートを抱えているため
+  Terraform 管理下に取り込まない。
+- **Terraform が新規作成するゲストを HA に載せる場合、`ha.tf` の
+  `proxmox_replication` に `depends_on` を足す。** 依存が無いとゲスト作成と
+  並行してレプリケーションジョブ作成が走り「そんなゲストは無い」で失敗する。
+  100-105 は import 済みで常に存在していたため露呈していなかった。
 
 ## Prerequisites
 

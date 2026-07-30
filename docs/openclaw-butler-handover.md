@@ -74,7 +74,29 @@
 
 1. **apply 前に `192.168.1.12` が空いていることを確認する**。既存ゲストは .4/.5/.6/.8/.9 を使用し .7 は用途不明のため .12 を選定した。AdGuard Home(LXC 100)の DHCP プール範囲外であることも併せて確認し、必要なら予約する
 2. homelab ワークスペースの apply を実行(HCP Agent 実行 = VM 103 経由)
-3. cloud image のダウンロードは初回 apply 時に pve3 の `local` へ行われる。`import` content type ではなく `iso` として保存しているため、datastore の content 設定変更は不要
+3. cloud image は初回 apply 時に専用の `image-import` ストレージ(pve3 の `/var/lib/pve-image-import`)へダウンロードされる。ディレクトリごと Terraform が作るので事前準備は不要
+
+> [!WARNING]
+> **1 回目の apply は失敗している(2026-07-30)。** cloud image を `local` に
+> `iso` タイプで置いていたため、ディスクの `import_from` が次のエラーで拒否された。
+>
+> ```
+> scsi0: local:iso/debian-12-genericcloud-amd64.img has wrong type 'iso'
+> - needs to be 'images' or 'import'
+> ```
+>
+> 専用の `import` タイプストレージを新設して修正済み。併せて、Terraform が
+> 同じ apply 内で作るゲストに対してレプリケーションジョブが並行実行される
+> 順序の問題も `depends_on` で直した(詳細は
+> [terraform/homelab/README.md](../terraform/homelab/README.md) の約束ごと)。
+>
+> **失敗した apply の残骸は無い**(修正 PR の plan `6 to add, 0 to change,
+> 1 to destroy` で確認済み)。
+> - `1 to destroy` は `proxmox_download_file` の置き換え。古いリソースが
+>   state にあるため、`local` に残った `.img`(約 350MB)は apply 時に
+>   自動削除される。手動削除は不要
+> - VM・レプリケーションジョブ `106-0`・HA リソース `vm:106` はいずれも
+>   state に無い。VM 作成が最初に失敗したため後続は作られていない
 4. VM 起動後 SSH(`morihaya@192.168.1.12`、鍵は ansible の common ロールと共用)→ Docker Engine + Compose v2 導入
 5. `qemu-guest-agent` を導入(cloud image に同梱されていないため、入れてから `agent` ブロックを有効化する)。ansible の common ロール適用も併せて行う
 6. FW/VLAN: outbound のみ許可。NAS・Proxmox 管理面への到達は遮断。inbound は全閉じ(Socket Mode のため不要)
