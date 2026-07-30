@@ -113,6 +113,14 @@ resource "proxmox_storage_zfspool" "guest_storage" {
 
 # -----------------------------------------------------------------------------
 # ストレージレプリケーション (pvesr)
+#
+# 【VM 106 への依存】
+# 100-105 は Terraform の外で作られたものを import したため、レプリケーション
+# ジョブを作る時点でゲストは必ず存在していた。一方 106 は Terraform が同じ
+# apply 内で作るので、depends_on を書かないとゲスト作成と並行して
+# ジョブ作成が走り「そんなゲストは無い」で失敗する。
+# for_each ごとに依存を変えられないため、全ジョブが 106 の作成を待つ。
+# 106 は一度作られるだけなので、これによる遅延は実質ない。
 # -----------------------------------------------------------------------------
 resource "proxmox_replication" "guest" {
   for_each = local.ha_guests_enabled
@@ -137,7 +145,10 @@ resource "proxmox_replication" "guest" {
     ignore_changes = [target]
   }
 
-  depends_on = [proxmox_storage_zfspool.guest_storage]
+  depends_on = [
+    proxmox_storage_zfspool.guest_storage,
+    proxmox_virtual_environment_vm.vm_106,
+  ]
 }
 
 # -----------------------------------------------------------------------------

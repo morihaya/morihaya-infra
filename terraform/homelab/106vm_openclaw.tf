@@ -23,17 +23,46 @@
 # =============================================================================
 
 # -----------------------------------------------------------------------------
+# cloud image を置くための import 用ストレージ
+#
+# 【なぜ local を使わないか】
+# 当初は `local` に content_type = "iso" でダウンロードしたが、VM 作成が
+# 次のエラーで失敗した。
+#
+#   scsi0: local:iso/debian-12-genericcloud-amd64.img has wrong type 'iso'
+#   - needs to be 'images' or 'import'
+#
+# ディスクの import 元は `images` か `import` タイプのストレージに無ければ
+# ならない (PVE 8.4 以降で追加された `import` コンテンツタイプ)。`local` に
+# `import` を足すこともできるが、`local` はクラスタ全ノードの ISO・バックアップ・
+# コンテナテンプレートを抱えているため Terraform 管理下に import したくない。
+# 影響範囲を切り離すため専用ストレージを新設する。
+# -----------------------------------------------------------------------------
+resource "proxmox_storage_directory" "image_import" {
+  id      = "image-import"
+  path    = "/var/lib/pve-image-import"
+  content = ["import"]
+
+  # cloud image を読むのは VM 作成時の pve3 だけなので他ノードには広げない
+  nodes = ["pve3"]
+
+  # ディレクトリと配下の import/ を PVE 側に作らせる
+  create_base_path = true
+  create_subdirs   = true
+}
+
+# -----------------------------------------------------------------------------
 # Debian 12 (bookworm) の cloud image
-# ゲストディスクと違いノードローカルの `local` に置く。レプリケーション対象では
-# ないが、VM 作成時に import 元として一度読むだけなので複製は不要。
+# ゲストディスク (local-zfs) と違いレプリケーション対象ではないが、VM 作成時に
+# import 元として一度読むだけなので複製は不要。
 # -----------------------------------------------------------------------------
 resource "proxmox_download_file" "debian12_genericcloud" {
   node_name    = "pve3"
-  datastore_id = "local"
-  content_type = "iso"
+  datastore_id = proxmox_storage_directory.image_import.id
+  content_type = "import"
 
-  # qcow2 のままだと content_type = "iso" が受け付けないため .img で保存する
-  file_name = "debian-12-genericcloud-amd64.img"
+  # import タイプは qcow2 をそのまま扱えるため拡張子の付け替えは不要
+  file_name = "debian-12-genericcloud-amd64.qcow2"
   url       = "https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2"
 
   # latest は中身が更新され続けるためチェックサム検証は行わない。
