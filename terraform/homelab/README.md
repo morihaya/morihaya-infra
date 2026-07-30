@@ -105,6 +105,17 @@ homelab/
   `import` タイプで置いている。`local` に `import` を足す手もあるが、`local` は
   全ノードの ISO・バックアップ・コンテナテンプレートを抱えているため
   Terraform 管理下に取り込まない。
+- **`iso` 配下に置いた `.img` は削除 API でも弾かれる。** PVE は content_type
+  ごとにファイル名と拡張子を検証するため、`local:iso/*.img` を Terraform に
+  destroy させると次のエラーで apply が止まる。
+  ```
+  Error: Error deleting datastore file
+  Could not delete datastore file 'local:iso/debian-12-genericcloud-amd64.img'
+  ... received an HTTP 400 response - Reason: Bad Request
+  ```
+  API 経由では消せないので、`removed` ブロック (`destroy = false`) で state から
+  外し、ファイルはノード上で `rm` する。**ストレージを移す変更は「置き換え」に
+  なるため、移動前のファイルが消せるかを先に確かめること。**
 - **Terraform が新規作成するゲストを HA に載せる場合、`ha.tf` の
   `proxmox_replication` に `depends_on` を足す。** 依存が無いとゲスト作成と
   並行してレプリケーションジョブ作成が走り「そんなゲストは無い」で失敗する。

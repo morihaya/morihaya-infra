@@ -52,11 +52,40 @@ resource "proxmox_storage_directory" "image_import" {
 }
 
 # -----------------------------------------------------------------------------
+# 旧 cloud image (local:iso/debian-12-genericcloud-amd64.img) を
+# destroy せずに state から外す
+#
+# `local` から `image-import` へ移す変更は Terraform 上は「置き換え」になるが、
+# その destroy が次のエラーで失敗し apply が止まった。
+#
+#   Error: Error deleting datastore file
+#   Could not delete datastore file 'local:iso/debian-12-genericcloud-amd64.img'
+#   ... received an HTTP 400 response - Reason: Bad Request
+#
+# PVE は content_type ごとにファイル名と拡張子を検証しており、`iso` 配下の
+# `.img` は削除 API でも弾かれる (bpg プロバイダ側でも既知: ファイルが存在
+# しない場合の destroy 失敗を含む)。API 経由では消せないため、Terraform には
+# 「忘れさせる」だけにしてファイルの後片付けはノード上で手動で行う。
+#
+# この removed ブロックは state から外れたことを確認したら削除してよい。
+# -----------------------------------------------------------------------------
+removed {
+  from = proxmox_download_file.debian12_genericcloud
+
+  lifecycle {
+    destroy = false
+  }
+}
+
+# -----------------------------------------------------------------------------
 # Debian 12 (bookworm) の cloud image
 # ゲストディスク (local-zfs) と違いレプリケーション対象ではないが、VM 作成時に
 # import 元として一度読むだけなので複製は不要。
+#
+# 上記の removed ブロックと同時に成立させるためリソース名を変えている
+# (同じアドレスのままでは「置き換え = destroy が走る」ため)。
 # -----------------------------------------------------------------------------
-resource "proxmox_download_file" "debian12_genericcloud" {
+resource "proxmox_download_file" "debian12_import" {
   node_name    = "pve3"
   datastore_id = proxmox_storage_directory.image_import.id
   content_type = "import"
@@ -96,7 +125,7 @@ resource "proxmox_virtual_environment_vm" "vm_106" {
   # OpenClaw のイメージは 2-4GB 程度だが、会話履歴とメモリが育つため余裕を持たせる。
   disk {
     datastore_id = var.guest_datastore_id
-    import_from  = proxmox_download_file.debian12_genericcloud.id
+    import_from  = proxmox_download_file.debian12_import.id
     interface    = "scsi0"
     size         = 40
     iothread     = true

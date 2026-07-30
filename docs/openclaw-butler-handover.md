@@ -90,13 +90,40 @@
 > 順序の問題も `depends_on` で直した(詳細は
 > [terraform/homelab/README.md](../terraform/homelab/README.md) の約束ごと)。
 >
-> **失敗した apply の残骸は無い**(修正 PR の plan `6 to add, 0 to change,
-> 1 to destroy` で確認済み)。
-> - `1 to destroy` は `proxmox_download_file` の置き換え。古いリソースが
->   state にあるため、`local` に残った `.img`(約 350MB)は apply 時に
->   自動削除される。手動削除は不要
-> - VM・レプリケーションジョブ `106-0`・HA リソース `vm:106` はいずれも
->   state に無い。VM 作成が最初に失敗したため後続は作られていない
+> VM・レプリケーションジョブ `106-0`・HA リソース `vm:106` は state に無い
+> (修正 PR の plan で add 側だったため)。VM 作成が最初に失敗したため
+> 後続は作られていない。
+
+> [!CAUTION]
+> **2 回目の apply も失敗した(2026-07-30)。旧 cloud image の削除だけは
+> 人間が手を動かす必要がある。**
+>
+> ```
+> Error: Error deleting datastore file
+> Could not delete datastore file 'local:iso/debian-12-genericcloud-amd64.img'
+> ... received an HTTP 400 response - Reason: Bad Request
+> ```
+>
+> `local` → `image-import` への移動は Terraform 上「置き換え」になるが、その
+> destroy が PVE 側で拒否される。PVE は content_type ごとにファイル名と拡張子を
+> 検証しており、`iso` 配下の `.img` は削除 API でも弾かれる。
+> **API 経由では消せないので Terraform には忘れさせるしかない。**
+>
+> コード側は `removed` ブロック(`destroy = false`)+ リソース名変更
+> (`debian12_genericcloud` → `debian12_import`)で対処済み。
+> 残りは以下を pve3 上で手動実行する。
+>
+> ```bash
+> ssh root@192.168.1.11 'ls -la /var/lib/vz/template/iso/'
+> ```
+>
+> ```bash
+> ssh root@192.168.1.11 'rm -i /var/lib/vz/template/iso/debian-12-genericcloud-amd64.img'
+> ```
+>
+> ファイルが既に無い場合もある(その場合 400 の原因は「存在しないファイルの
+> 削除」側)。どちらでも `removed` ブロックで apply は進む。
+> state から外れたことを確認したら `removed` ブロックは削除してよい。
 4. VM 起動後 SSH(`morihaya@192.168.1.12`、鍵は ansible の common ロールと共用)→ Docker Engine + Compose v2 導入
 5. `qemu-guest-agent` を導入(cloud image に同梱されていないため、入れてから `agent` ブロックを有効化する)。ansible の common ロール適用も併せて行う
 6. FW/VLAN: outbound のみ許可。NAS・Proxmox 管理面への到達は遮断。inbound は全閉じ(Socket Mode のため不要)
