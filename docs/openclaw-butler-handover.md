@@ -90,12 +90,13 @@
 > 順序の問題も `depends_on` で直した(詳細は
 > [terraform/homelab/README.md](../terraform/homelab/README.md) の約束ごと)。
 >
-> **再 apply 前に確認すること**: 失敗した apply の残骸。
-> - `local` に残った `debian-12-genericcloud-amd64.img`(約 350MB)。
->   `proxmox_download_file` が state にあれば置き換え時に削除されるが、
->   state に無い場合は手動削除が必要
-> - レプリケーションジョブ `106-0` や HA リソース `vm:106` が中途半端に
->   作られていないか。plan の差分で確認する
+> **失敗した apply の残骸は無い**(修正 PR の plan `6 to add, 0 to change,
+> 1 to destroy` で確認済み)。
+> - `1 to destroy` は `proxmox_download_file` の置き換え。古いリソースが
+>   state にあるため、`local` に残った `.img`(約 350MB)は apply 時に
+>   自動削除される。手動削除は不要
+> - VM・レプリケーションジョブ `106-0`・HA リソース `vm:106` はいずれも
+>   state に無い。VM 作成が最初に失敗したため後続は作られていない
 4. VM 起動後 SSH(`morihaya@192.168.1.12`、鍵は ansible の common ロールと共用)→ Docker Engine + Compose v2 導入
 5. `qemu-guest-agent` を導入(cloud image に同梱されていないため、入れてから `agent` ブロックを有効化する)。ansible の common ロール適用も併せて行う
 6. FW/VLAN: outbound のみ許可。NAS・Proxmox 管理面への到達は遮断。inbound は全閉じ(Socket Mode のため不要)
