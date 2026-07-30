@@ -16,9 +16,17 @@
 #
 # 【フェイルオーバー時のメモリ収容】
 #   pve 障害時  -> pve3 が 100/101/102 (計 2.0GB) を引き取る。pve3 は自分の
-#                  105 (2GB) と合わせて 4.0GB / 8GB で収まる。
+#                  105 (2GB) と 106 (4GB) と合わせて 8.0GB / 8GB。上限に張り付く
+#                  ため、この状態が続く場合は 106 を手動で pve2 へ寄せる。
 #                  pve2 が 104 (4GB) を引き取り 4.0GB / 7.5GB。
-#   pve3 障害時 -> pve2 が 105 (2GB) を引き取る。
+#   pve3 障害時 -> pve2 が 105 (2GB) を引き取り、pve が 106 (4GB) を引き取る。
+#                  pve は 100-104 と 103 で約 8.3GB 使用しており 12.3GB / 16GB。
+#
+# 【種別 (ct / vm)】
+# HA リソース ID は `ct:100` / `vm:106` のように種別のプレフィックスが要る。
+# 既存ゲストは全て LXC なので type を省略した場合は "ct" とみなす
+# (省略時の既定値を "ct" にすることで、106 追加時に既存 5 件の plan を
+# no-op に保っている)。
 #
 # 【データ欠損】レプリケーションは非同期のため、障害時は最大で schedule
 # 間隔ぶんの書き込みが失われる。DNS/DHCP と Traefik は 5 分、
@@ -68,9 +76,25 @@ locals {
       standby  = "pve2"
       schedule = "*/15"
     }
+    # 唯一の VM。standby は pve2 ではなく pve にする。pve2 は 104 (4GB) と
+    # 105 (2GB) の standby を既に兼ねており、7.5GB では 106 の 4GB を
+    # 追加で収容できないため。
+    106 = {
+      name     = "openclaw"
+      type     = "vm"
+      primary  = "pve3"
+      standby  = "pve"
+      schedule = "*/15"
+    }
   }
 
   ha_guests_enabled = var.enable_ha ? local.ha_guests : {}
+
+  # ha_guests の各エントリに種別を補完したもの (省略時は LXC)
+  ha_guest_ids = {
+    for id, g in local.ha_guests_enabled :
+    id => "${lookup(g, "type", "ct")}:${id}"
+  }
 }
 
 # -----------------------------------------------------------------------------
@@ -122,7 +146,7 @@ resource "proxmox_replication" "guest" {
 resource "proxmox_haresource" "guest" {
   for_each = local.ha_guests_enabled
 
-  resource_id = "ct:${each.key}"
+  resource_id = local.ha_guest_ids[each.key]
   state       = "started"
 
   # 復旧したノードへ自動的に戻さない。戻す動作は 2 回目の短時間停止を生むため、
@@ -146,7 +170,7 @@ resource "proxmox_harule" "node_affinity" {
 
   rule      = "node-affinity-${each.value.name}"
   type      = "node-affinity"
-  resources = ["ct:${each.key}"]
+  resources = [local.ha_guest_ids[each.key]]
 
   # 複製を持つ 2 ノード以外では絶対に起動させない
   strict = true
@@ -171,6 +195,6 @@ output "ha_failover_map" {
   description = "Failover target and replication interval for each HA-managed guest"
   value = {
     for id, g in local.ha_guests :
-    g.name => "ct:${id} ${g.primary} -> ${g.standby} (every ${g.schedule})"
+    g.name => "${lookup(g, "type", "ct")}:${id} ${g.primary} -> ${g.standby} (every ${g.schedule})"
   }
 }
