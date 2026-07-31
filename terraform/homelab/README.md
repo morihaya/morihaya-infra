@@ -105,6 +105,15 @@ homelab/
   `import` タイプで置いている。`local` に `import` を足す手もあるが、`local` は
   全ノードの ISO・バックアップ・コンテナテンプレートを抱えているため
   Terraform 管理下に取り込まない。
+- **cloud image のゲストには `serial_device` が必須。** Debian の cloud image は
+  `console=tty0 console=ttyS0,115200` をカーネルに渡しており、最後の `console=`
+  が `/dev/console` になる。Proxmox の VM は既定でシリアルポートを持たないため、
+  足し忘れると PID 1 の書き込みが失敗して次のパニックで停止する。
+  ```
+  Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000200
+  ```
+  カーネルは起動しているのに**ネットワークへ 1 パケットも出ない**のが特徴。
+  `ip -s link show tap<vmid>i0` の RX が 0 なら、この症状を疑う。
 - **`iso` 配下に置いた `.img` は削除 API でも弾かれる。** PVE は content_type
   ごとにファイル名と拡張子を検証するため、`local:iso/*.img` を Terraform に
   destroy させると次のエラーで apply が止まる。
