@@ -1,7 +1,11 @@
 # HCP Terraform - ワークスペース管理
 
-HCP Terraform 自体を Terraform で管理するルート。本リポジトリが使う
-ワークスペースの設定をコード化する。
+HCP Terraform 自体を Terraform で管理するルート。`morihaya` org の
+ワークスペース設定をコード化する。
+
+管理対象は本リポジトリのワークスペースに限らない。org 内のワークスペースは
+このルートへ集約する。VCS のバックエンドとなるリポジトリはワークスペースごとに
+異なるため、[workspaces.tf](workspaces.tf) の `vcs_identifier` で個別に指定する。
 
 ## なぜやるのか
 
@@ -32,12 +36,24 @@ UI 任せの運用が実害を出している。
 | `-newrelic` | Default | `/terraform/newrelic/` | remote | **1.0.8** | false | **false** |
 | `-pagerduty` | Default | (なし) | **local** | **1.0.8** | false | false |
 | `-tailscale` | Default | (なし) | **local** | **1.0.8** | false | false |
+| `minecraft-server-oci` | OCI | `terraform` | remote | **1.12.2** | **true** | true |
 
 `-pagerduty` と `-tailscale` は VCS 連携が無く `execution_mode = local`。
 HCP は state の保管場所としてのみ使われ、plan / apply は手元で走る。
 
 `terraform/spotify` は HCP を使わずローカル state なので、対応する
 ワークスペースは存在しない。
+
+### 本リポジトリ外のワークスペース
+
+`minecraft-server-oci` だけは VCS のバックエンドが
+[morihaya/hayashi-ke-minecraft-server](https://github.com/morihaya/hayashi-ke-minecraft-server)
+で、OCI 上の Minecraft / BeamMP サーバのセキュリティリストを管理している。
+2026-07-31 に取り込んだ。
+
+`auto_apply` が有効なのでマージすれば適用まで自動で進む。その代わり apply が
+失敗しても PR 上には何も出ないため、リポジトリ側に `hcp-tf-comment.yml` を
+置いて run へのリンクをコメントさせている。
 
 > [!IMPORTANT]
 > 現時点のコードは**実態をそのまま写し取っているだけ**で、上表のバラつきは
@@ -121,9 +137,13 @@ terraform init
 terraform plan
 ```
 
-既存ワークスペースの取り込みは 2026-07-26 に完了済み
+本リポジトリのワークスペースの取り込みは 2026-07-26 に完了済み
 (`Plan: 7 to import, 0 to add, 0 to change, 0 to destroy.`)。
-取り込み用の `imports.tf` は役目を終えたので削除した。
+
+`minecraft-server-oci` は 2026-07-31 に取り込んだ
+(`Plan: 1 to import, 0 to add, 0 to change, 0 to destroy.`)。
+取り込み用の [imports.tf](imports.tf) は apply 後に役目を終えるので削除すること
+(前回の取り込み時も同様に削除している)。
 
 ## 今後
 

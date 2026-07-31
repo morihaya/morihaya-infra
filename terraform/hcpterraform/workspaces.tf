@@ -1,8 +1,12 @@
 # =============================================================================
-# HCP Terraform workspaces used by this repository
+# HCP Terraform workspaces in the morihaya organization
 #
 # ここは「HCP Terraform 自体を管理する」ルート。UI でしか見えない設定が
 # 長期間放置されて実害が出たため IaC 化した (詳細は README.md)。
+#
+# 管理対象は本リポジトリのワークスペースに限らない。org 内のワークスペースは
+# ここへ集約する。VCS のバックエンドとなるリポジトリはワークスペースごとに
+# 異なるため vcs_identifier で個別に指定する。
 #
 # 【重要】この時点では実態をそのまま写し取ることだけを目的としている。
 # 下表のとおり terraform_version / auto_apply / speculative / working_directory
@@ -37,6 +41,11 @@ data "tfe_project" "homelab" {
   organization = var.tfe_organization
 }
 
+data "tfe_project" "oci" {
+  name         = "OCI"
+  organization = var.tfe_organization
+}
+
 data "tfe_project" "default" {
   name         = "Default Project"
   organization = var.tfe_organization
@@ -58,6 +67,7 @@ locals {
       auto_apply_run_trigger = true
       speculative_enabled    = true
       vcs                    = true
+      vcs_identifier         = var.vcs_repo_identifier
     }
 
     aws-root = {
@@ -75,6 +85,7 @@ locals {
       # speculative 無効。PR 時に plan が走らない。
       speculative_enabled = false
       vcs                 = true
+      vcs_identifier      = var.vcs_repo_identifier
     }
 
     azure = {
@@ -89,6 +100,7 @@ locals {
       auto_apply_run_trigger = true
       speculative_enabled    = true
       vcs                    = true
+      vcs_identifier         = var.vcs_repo_identifier
     }
 
     homelab = {
@@ -105,6 +117,7 @@ locals {
       auto_apply_run_trigger = false
       speculative_enabled    = true
       vcs                    = true
+      vcs_identifier         = var.vcs_repo_identifier
     }
 
     newrelic = {
@@ -120,6 +133,7 @@ locals {
       auto_apply_run_trigger = false
       speculative_enabled    = false
       vcs                    = true
+      vcs_identifier         = var.vcs_repo_identifier
     }
 
     # 2026-07-26 に local から remote へ移行した。以前は HCP を state の保管場所
@@ -138,6 +152,7 @@ locals {
       auto_apply_run_trigger = false
       speculative_enabled    = true
       vcs                    = true
+      vcs_identifier         = var.vcs_repo_identifier
     }
 
     tailscale = {
@@ -152,6 +167,32 @@ locals {
       auto_apply_run_trigger = false
       speculative_enabled    = false
       vcs                    = false
+      # VCS 連携が無いので参照されない。map の型を揃えるためだけに置いている。
+      vcs_identifier = null
+    }
+
+    # 本リポジトリ外のワークスペース。OCI 上の Minecraft サーバの
+    # セキュリティリストを管理する morihaya/hayashi-ke-minecraft-server が
+    # バックエンド。2026-07-31 に取り込んだ。
+    #
+    # auto_apply が有効なのでマージすれば適用まで自動で進む。その代わり
+    # apply が失敗しても PR 上に何も出ないため、リポジトリ側に
+    # hcp-tf-comment.yml を置いて run へのリンクをコメントさせている。
+    minecraft-server-oci = {
+      name              = "minecraft-server-oci"
+      description       = "GitHub Repo: https://github.com/morihaya/hayashi-ke-minecraft-server\n"
+      project_id        = data.tfe_project.oci.id
+      working_directory = "terraform"
+      # trigger_patterns が空の場合、HCP は working_directory を
+      # トリガとして扱う。実態どおり空のままにしている。
+      trigger_patterns       = []
+      terraform_version      = "1.12.2"
+      execution_mode         = "remote"
+      auto_apply             = true
+      auto_apply_run_trigger = true
+      speculative_enabled    = true
+      vcs                    = true
+      vcs_identifier         = "morihaya/hayashi-ke-minecraft-server"
     }
   }
 }
@@ -184,7 +225,7 @@ resource "tfe_workspace" "this" {
   dynamic "vcs_repo" {
     for_each = each.value.vcs ? [1] : []
     content {
-      identifier                 = var.vcs_repo_identifier
+      identifier                 = each.value.vcs_identifier
       github_app_installation_id = data.tfe_github_app_installation.this.id
       ingress_submodules         = false
     }
