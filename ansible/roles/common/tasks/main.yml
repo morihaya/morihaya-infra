@@ -1,4 +1,29 @@
 ---
+- name: Set timezone
+  community.general.timezone:
+    name: '{{ timezone }}'
+  tags:
+    - system
+    - timezone
+
+# cloud image には locales が入っていないことがある
+- name: Install locales package
+  ansible.builtin.package:
+    name: locales
+    state: present
+  tags:
+    - system
+    - locale
+
+- name: Generate locales
+  community.general.locale_gen:
+    name: '{{ item }}'
+    state: present
+  loop: '{{ locales }}'
+  tags:
+    - system
+    - locale
+
 - name: Add users
   ansible.builtin.user:
     name: '{{ item.name }}'
