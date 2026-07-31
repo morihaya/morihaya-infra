@@ -14,6 +14,11 @@ services:
       # Bedrock は東京リージョン固定。モデルは openclaw.json 側で指定する。
       AWS_REGION: ap-northeast-1
 
+      # コンテナのタイムゾーン。ホスト (VM 106) の設定は引き継がれないため
+      # ここで明示する。定時通知や cron はコンテナ内の時刻で動くので、
+      # UTC のままだと朝のブリーフィングが 9 時間ずれる。
+      TZ: Asia/Tokyo
+
     volumes:
       # 設定・認証情報・会話履歴・workspace が全てこの下に載る。
       # コンテナは uid 1000 (node) で動き、VM 側の morihaya も uid 1000 なので
