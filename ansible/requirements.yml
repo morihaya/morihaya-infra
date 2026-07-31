@@ -1,3 +1,5 @@
 ---
 collections:
   - name: ansible.posix
+  # timezone / locale_gen モジュールを使う
+  - name: community.general

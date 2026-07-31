@@ -1,4 +1,24 @@
 ---
+# =============================================================================
+# システム基本設定
+#
+# 自宅は日本にあるので全ホストを JST に揃える。
+#
+# ロケールは cloud image 由来のホストで問題になった。Debian の genericcloud
+# には C.utf8 しか無く、macOS から SSH すると LC_ALL=en_US.UTF-8 が転送されて
+# 解決に失敗する。その結果 vim の encoding が latin1 に落ち、日本語が
+# 文字化けする (VM 106 で実際に発生)。
+#
+#   -bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#
+# =============================================================================
+timezone: 'Asia/Tokyo'
+
+locales:
+  - 'en_US.UTF-8'
+  - 'ja_JP.UTF-8'
+
+
 users:
   - name: "morihaya"
     # "!!" はパスワードをロックする指定。ログインは SSH 公開鍵のみ。
