@@ -5,6 +5,13 @@
 //
 // 秘密情報はここに書かない。トークン類は .env から環境変数で渡す。
 {
+  // Gateway の動作モード。
+  // 未設定だと起動時に弾かれる (設定を書き換えられた可能性を疑う挙動):
+  //   Gateway start blocked: existing config is missing gateway.mode.
+  gateway: {
+    mode: 'local',
+  },
+
   agents: {
     defaults: {
       // 普段使いは Haiku。重い依頼だけ Slack で `/model` を使って
@@ -13,18 +20,101 @@
       // NOTE: モデル ID は bedrockDiscovery の結果に合わせて確定させること。
       // `docker compose exec openclaw openclaw models list` で実際に
       // 見えている ID を確認する。apac.* はクロスリージョン推論プロファイル。
+      // 普段使いは Haiku。重い依頼だけ Slack で `/model` を使って
+      // Sonnet に切り替える運用にする。
+      //
+      // 【2026-07-31 時点の未解決事項】
+      // Bedrock の Anthropic モデルはアカウント単位で use case details の
+      // 提出が要る。未提出だと Haiku / Sonnet の区別なく次で失敗する。
+      //
+      //   ResourceNotFoundException: Model use case details have not been
+      //   submitted for this account. Fill out the Anthropic use case
+      //   details form before using the model. If you have already filled
+      //   out the form, try again in 15 minutes.
+      //
+      // OpenClaw の問題ではない。AWS CLI から直接 Converse を叩いても同じ。
+      // Bedrock コンソールでフォームを提出すれば解消する。
+      //
+      // なお fallbacks に別モデルを置いても肩代わりしない。この例外は
+      // failover 対象の失敗として扱われないため、代替モデルの用意は無意味。
       model: {
-        primary: 'amazon-bedrock/apac.anthropic.claude-haiku-4-5-20251001-v1:0',
+        primary: 'amazon-bedrock/jp.anthropic.claude-haiku-4-5-20251001-v1:0',
+      },
+
+      // メモリの意味検索 (semantic recall) は既定で OpenAI の埋め込みを使う。
+      // このホストには OPENAI_API_KEY を置かない方針なので無効化する。
+      //
+      //   Memory search provider is set to "openai" but no API key was found.
+      //
+      // 無効でもワークスペース上のファイルによる記憶は従来どおり働く。
+      // Bedrock の埋め込みモデルへ向ける手もあるので、必要になったら見直す。
+      memorySearch: {
+        enabled: false,
+      },
+    },
+  },
+
+  plugins: {
+    // 同梱外のプラグインを明示的に信頼する。空にしておくと「見つかったものが
+    // 自動で読み込まれうる」状態になり、起動のたびに警告が出る。
+    // エージェントと同じ権限で動くコードなので、増やす際は素性を確認すること。
+    allow: ['amazon-bedrock', 'slack'],
+
+    entries: {
+      // Bedrock プロバイダは標準イメージに同梱されていない。
+      // 有効化しないと起動はするが実行時に次で失敗する。
+      //
+      //   No API provider registered for api: bedrock-converse-stream
+      //
+      // 導入は VM 上で一度だけ実行する (~/.openclaw/npm 配下に入るので永続する)。
+      //   docker compose exec openclaw \
+      //     openclaw plugins install @openclaw/amazon-bedrock-provider
+      'amazon-bedrock': {
+        enabled: true,
+      },
+
+      // Slack チャネルも同梱外。同梱されているのは telegram のみ。
+      // 入れないとチャネルが起動せず、Slack から一切反応しない。
+      //   docker compose exec openclaw openclaw plugins install @openclaw/slack
+      slack: {
+        enabled: true,
       },
     },
   },
 
   models: {
-    // 利用可能な Bedrock モデルを API から自動発見する。
-    // IAM 側で ListFoundationModels / ListInferenceProfiles を許可済み。
-    bedrockDiscovery: {
-      enabled: true,
-      region: 'ap-northeast-1',
+    providers: {
+      // Bedrock は組み込みプロバイダだが、使うモデルは明示的に宣言する必要が
+      // ある。宣言しないと起動はするものの、実行時に次で失敗する。
+      //
+      //   FailoverError: Unknown model: amazon-bedrock/...
+      //
+      // 利用可能な ID は次で確認できる (要 IAM 権限)。
+      //   aws bedrock list-inference-profiles --region ap-northeast-1
+      'amazon-bedrock': {
+        baseUrl: 'https://bedrock-runtime.ap-northeast-1.amazonaws.com',
+        api: 'bedrock-converse-stream',
+        // アクセスキーは .env から環境変数で渡す (AWS SDK の既定の解決順)
+        auth: 'aws-sdk',
+
+        // jp.* は日本国内で完結するクロスリージョン推論プロファイル。
+        // apac.* はシドニーやシンガポールへもルーティングされうるため、
+        // 自宅の情報を扱うこの用途では jp.* を選ぶ。
+        models: [
+          {
+            id: 'jp.anthropic.claude-haiku-4-5-20251001-v1:0',
+            name: 'Claude Haiku 4.5 (Bedrock JP)',
+            contextWindow: 200000,
+            maxTokens: 8192,
+          },
+          {
+            id: 'jp.anthropic.claude-sonnet-4-6',
+            name: 'Claude Sonnet 4.6 (Bedrock JP)',
+            contextWindow: 200000,
+            maxTokens: 8192,
+          },
+        ],
+      },
     },
   },
 
