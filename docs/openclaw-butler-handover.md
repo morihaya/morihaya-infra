@@ -3,16 +3,37 @@
 - 作成: 2026-07-29(Claude Fable 5 セッションからの引き継ぎ用)
 - 更新: 2026-07-30(Phase 1 マージ済み、Phase 2 の VM コード化まで完了)
 - 目的: Proxmox 環境に OpenClaw を導入し、家族用 Slack に常駐する執事型 AI エージェントを構築する
-- 状態: **AWS 側は #84 でマージ済み。Proxmox VM 側 (Phase 2) は別 PR で実装中**
+- 状態: **AWS (#84) と VM (#85-#87) は apply 済み。VM がシリアルコンソール未定義で起動できず修正中**
 
 ## 0. 現在の進捗
 
 | Phase | 状態 | 補足 |
 |---|---|---|
-| 1. AWS 土台 | **コードは #84 でマージ済み** | plan は `3 added`。auto-apply 無効なので main の run を HCP UI で Confirm & Apply する |
-| 2. VM 構築 | **コード実装済み・apply 前** | `terraform/homelab/106vm_openclaw.tf`、HA 登録込み |
-| 3. OpenClaw セットアップ | 未着手 | VM 起動後 |
+| 1. AWS 土台 | **#84 マージ・apply 済み** | IAM ユーザ `openclaw-butler` と予算が存在するはず。アクセスキー発行と Model access 有効化は未確認 |
+| 2. VM 構築 | **apply 済みだが VM が起動しない** | #85 → #86 → #87 と修正を重ねて apply は通った。ただし起動時にカーネルパニック(下記)。シリアルコンソール追加で修正中 |
+| 3. OpenClaw セットアップ | 未着手 | VM が SSH 可能になってから |
 | 4. 執事化・運用 | 未着手 | |
+
+> [!CAUTION]
+> **VM 106 は起動に失敗している(2026-07-31 診断)。**
+>
+> apply 自体は成功し `qm status 106` は `running` だが、ゲストがネットワークへ
+> **1 パケットも出さない**(`ip -s link show tap106i0` の RX が 0)。
+> コンソールを screendump したところ次のパニックで停止していた。
+>
+> ```
+> Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000200
+> ```
+>
+> 原因は **シリアルコンソール未定義**。Debian の cloud image は
+> `console=tty0 console=ttyS0,115200 ...` をカーネルに渡しており、最後の
+> `console=` が `/dev/console` になる。Proxmox の VM は既定でシリアルポートを
+> 持たないため、PID 1 の書き込みが失敗して systemd が即死していた
+> (パニック直前のスタックが `ksys_write` なのと一致)。
+>
+> `serial_device { device = "socket" }` を足して修正。
+> cloud-init はこの起動失敗により**一度も走っていない**ので、
+> 修正後の初回起動でネットワーク設定と SSH 鍵が投入される。
 
 > [!NOTE]
 > Phase 1 と Phase 2 は当初 1 つの PR にまとめていたが、#84 が AWS 分だけの

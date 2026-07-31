@@ -159,6 +159,26 @@ resource "proxmox_virtual_environment_vm" "vm_106" {
     firewall = true
   }
 
+  # シリアルコンソール。Debian の cloud image には必須。
+  #
+  # 【無いとどうなるか】
+  # イメージの GRUB 設定は次のようになっており、最後の console= が
+  # /dev/console になるため ttyS0 が存在しないと PID 1 の書き込みが失敗する。
+  #
+  #   GRUB_CMDLINE_LINUX="console=tty0 console=ttyS0,115200 earlyprintk=ttyS0,115200 consoleblank=0"
+  #
+  # 実際にこれを省いた初回起動は、カーネルは上がるものの systemd が即死して
+  # 次のパニックで止まった (ネットワークも 1 パケットも出ないまま)。
+  #
+  #   Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000200
+  #
+  # Proxmox の VM は既定でシリアルポートを持たないため、cloud image を使う
+  # ゲストでは明示的に足す必要がある。VGA はそのまま残すので Web コンソールも
+  # 従来どおり使える。
+  serial_device {
+    device = "socket"
+  }
+
   bios          = "seabios"
   scsi_hardware = "virtio-scsi-single"
   machine       = "pc"
