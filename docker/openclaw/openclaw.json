@@ -1,0 +1,58 @@
+// OpenClaw 執事エージェントの設定 (JSON5: コメント・末尾カンマが使える)
+//
+// 配置先: VM 106 の ~/openclaw/data/config/openclaw.json
+//         (コンテナ内では /home/node/.openclaw/openclaw.json)
+//
+// 秘密情報はここに書かない。トークン類は .env から環境変数で渡す。
+{
+  agents: {
+    defaults: {
+      // 普段使いは Haiku。重い依頼だけ Slack で `/model` を使って
+      // Sonnet に切り替える運用にする (コストは docs の想定で月千円台)。
+      //
+      // NOTE: モデル ID は bedrockDiscovery の結果に合わせて確定させること。
+      // `docker compose exec openclaw openclaw models list` で実際に
+      // 見えている ID を確認する。apac.* はクロスリージョン推論プロファイル。
+      model: {
+        primary: 'amazon-bedrock/apac.anthropic.claude-haiku-4-5-20251001-v1:0',
+      },
+    },
+  },
+
+  models: {
+    // 利用可能な Bedrock モデルを API から自動発見する。
+    // IAM 側で ListFoundationModels / ListInferenceProfiles を許可済み。
+    bedrockDiscovery: {
+      enabled: true,
+      region: 'ap-northeast-1',
+    },
+  },
+
+  channels: {
+    slack: {
+      enabled: true,
+
+      // Socket Mode。自宅側にポート公開も固定 IP も要らない。
+      mode: 'socket',
+      appToken: { source: 'env', provider: 'default', id: 'SLACK_APP_TOKEN' },
+      botToken: { source: 'env', provider: 'default', id: 'SLACK_BOT_TOKEN' },
+
+      // DM は家族のみに限定する。
+      //
+      // TODO: 家族の Slack ユーザー ID (U で始まる) を入れる。
+      // 空のままだと誰とも DM できないので、起動前に必ず埋めること。
+      // ID は Slack のプロフィール > その他 > メンバー ID からコピーできる。
+      // 表示名では動かない (起動時に ID で解決されるため)。
+      dmPolicy: 'allowlist',
+      allowFrom: [],
+
+      // チャンネルも許可制。メンションされた時だけ反応する。
+      //
+      // TODO: 常駐させたいチャンネル ID (C で始まる) を入れる。
+      groupPolicy: 'allowlist',
+      channels: {
+        // 'C0123456789': { requireMention: true },
+      },
+    },
+  },
+}

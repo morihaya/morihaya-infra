@@ -1,0 +1,38 @@
+# OpenClaw 執事エージェント (VM 106 / 192.168.1.12)
+#
+# 秘密情報は .env に置く (git 管理外)。.env.example を参照。
+services:
+  openclaw:
+    image: ghcr.io/openclaw/openclaw:latest
+    container_name: openclaw
+    restart: unless-stopped
+
+    # AWS のアクセスキーと Slack のトークンはここから読む
+    env_file: .env
+
+    environment:
+      # Bedrock は東京リージョン固定。モデルは openclaw.json 側で指定する。
+      AWS_REGION: ap-northeast-1
+
+    volumes:
+      # 設定・認証情報・会話履歴・workspace が全てこの下に載る。
+      # コンテナは uid 1000 (node) で動き、VM 側の morihaya も uid 1000 なので
+      # ホスト側のファイル所有者はそのままで良い。
+      - ./data/config:/home/node/.openclaw
+      # 認証プロファイルの秘密ディレクトリは別系統
+      - ./data/secrets:/home/node/.config/openclaw
+
+    ports:
+      # Control UI。LAN へは晒さず 127.0.0.1 に閉じる。
+      # 手元から見たい場合は SSH ポートフォワードを使う (README 参照)。
+      - "127.0.0.1:18789:18789"
+
+    # エージェントがシェルを実行できる以上、コンテナ側でも素直に絞っておく
+    security_opt:
+      - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
