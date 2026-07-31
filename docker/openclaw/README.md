@@ -40,6 +40,49 @@ scp compose.yaml morihaya@192.168.1.12:~/openclaw/
 scp openclaw.json morihaya@192.168.1.12:~/openclaw/data/config/
 ```
 
+### 0. Bedrock の use case details を提出する
+
+**Anthropic モデルはモデルアクセスの有効化だけでは呼べない。** アカウント単位で
+use case details の提出が要る。未提出だとモデルを問わず次で失敗する。
+
+```
+ResourceNotFoundException: Model use case details have not been submitted for
+this account. Fill out the Anthropic use case details form before using the
+model. If you have already filled out the form, try again in 15 minutes.
+```
+
+Bedrock コンソール (ap-northeast-1) の Model access からフォームを提出する。
+反映まで数分かかる。
+
+> [!TIP]
+> OpenClaw を疑う前に AWS CLI で切り分けられる。これが通らなければ AWS 側の問題。
+>
+> ```bash
+> aws bedrock-runtime converse --region ap-northeast-1 --model-id jp.anthropic.claude-haiku-4-5-20251001-v1:0 --messages '[{"role":"user","content":[{"text":"hi"}]}]'
+> ```
+
+### 1.5. プラグインを入れる
+
+**Bedrock も Slack も標準イメージに同梱されていない** (同梱チャネルは telegram のみ)。
+入れないと、起動はするが Bedrock は `No API provider registered for api:
+bedrock-converse-stream`、Slack は無反応になる。
+
+```bash
+docker compose exec openclaw openclaw plugins install @openclaw/amazon-bedrock-provider
+```
+
+```bash
+docker compose exec openclaw openclaw plugins install @openclaw/slack
+```
+
+インストール先は `~/.openclaw/npm/` 配下 (バインドマウント下) なので永続する。
+
+> [!IMPORTANT]
+> インストーラは `openclaw.json` を書き換えようとするが、コメントごと消える
+> 縮小になるため OpenClaw 自身の安全機構に弾かれる (`Config write rejected:
+> size-drop`)。**これは想定どおり**で、`plugins.entries` と `plugins.allow` は
+> リポジトリ側の設定ファイルに既に書いてある。
+
 ### 2. 秘密情報を置く
 
 `.env.example` を雛形に、VM 上で `~/openclaw/.env` を作る。**この作業だけは手で行う**
