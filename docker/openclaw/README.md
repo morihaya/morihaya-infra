@@ -36,6 +36,15 @@ VM そのものは Terraform 管理 ([terraform/homelab/106vm_openclaw.tf](../..
 scp compose.yaml morihaya@192.168.1.12:~/openclaw/
 ```
 
+> [!CAUTION]
+> **`openclaw.json` をそのまま scp してはいけない。**
+> このリポジトリは Public のため、`channels.slack` の `allowFrom` と
+> `channels` は**意図的に空にしてある**。実際のユーザー ID / チャンネル ID は
+> VM 上のファイルにだけ存在する。上書きすると Bot が誰にも反応しなくなる。
+>
+> 配布する場合は、VM 側の該当ブロックを退避してから差し替えるか、
+> 変更箇所だけを手で反映すること。
+
 ```bash
 scp openclaw.json morihaya@192.168.1.12:~/openclaw/data/config/
 ```
