@@ -127,22 +127,33 @@
       appToken: { source: 'env', provider: 'default', id: 'SLACK_APP_TOKEN' },
       botToken: { source: 'env', provider: 'default', id: 'SLACK_BOT_TOKEN' },
 
+      // ---------------------------------------------------------------------
+      // 【重要】ここから下の実際の値はこのリポジトリで管理しない。
+      //
+      // このリポジトリは Public。Slack のユーザー ID とチャンネル ID 自体は
+      // 認証情報ではないが、チャンネル名からは家庭の内情が読み取れてしまう。
+      // 実際の値は VM 106 の ~/openclaw/data/config/openclaw.json にだけ置く。
+      //
+      // そのため **このファイルを VM へそのまま scp してはいけない。**
+      // 配布する場合は下の 2 ブロックを VM 側の値で上書きしてから行うこと。
+      // ---------------------------------------------------------------------
+
       // DM は家族のみに限定する。空にすると全 DM が破棄される。
       // ID は Slack のプロフィール > その他 > メンバー ID からコピーする。
       // 表示名では動かない (起動時に ID で解決されるため)。
       dmPolicy: 'allowlist',
       allowFrom: [
-        'U04S9MVCN21', // morihaya
-        'U04SR9CPRLH',
-        'U04SCL3E1J6',
+        // 'U0123456789', // VM 側で設定
       ],
 
-      // チャンネルも許可制。メンションされた時だけ反応する。
+      // チャンネルも許可制。requireMention を false にすると当該チャンネルの
+      // 全発言に反応し、Bedrock の課金が会話量にそのまま比例する。
       //
-      // TODO: 常駐させたいチャンネル ID (C で始まる) を入れる。
+      // NOTE: 許可しても Bot が参加していないチャンネルからはイベントが
+      // 届かない。使いたいチャンネルでは Slack 側で /invite が要る。
       groupPolicy: 'allowlist',
       channels: {
-        // 'C0123456789': { requireMention: true },
+        // 'C0123456789': { requireMention: true }, // VM 側で設定
       },
     },
   },
