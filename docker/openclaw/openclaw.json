@@ -132,6 +132,7 @@
       // 表示名では動かない (起動時に ID で解決されるため)。
       dmPolicy: 'allowlist',
       allowFrom: [
+        'U04S9MVCN21', // morihaya
         'U04SR9CPRLH',
         'U04SCL3E1J6',
       ],
