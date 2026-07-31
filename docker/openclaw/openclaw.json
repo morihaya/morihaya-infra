@@ -127,14 +127,14 @@
       appToken: { source: 'env', provider: 'default', id: 'SLACK_APP_TOKEN' },
       botToken: { source: 'env', provider: 'default', id: 'SLACK_BOT_TOKEN' },
 
-      // DM は家族のみに限定する。
-      //
-      // TODO: 家族の Slack ユーザー ID (U で始まる) を入れる。
-      // 空のままだと誰とも DM できないので、起動前に必ず埋めること。
-      // ID は Slack のプロフィール > その他 > メンバー ID からコピーできる。
+      // DM は家族のみに限定する。空にすると全 DM が破棄される。
+      // ID は Slack のプロフィール > その他 > メンバー ID からコピーする。
       // 表示名では動かない (起動時に ID で解決されるため)。
       dmPolicy: 'allowlist',
-      allowFrom: [],
+      allowFrom: [
+        'U04SR9CPRLH',
+        'U04SCL3E1J6',
+      ],
 
       // チャンネルも許可制。メンションされた時だけ反応する。
       //
