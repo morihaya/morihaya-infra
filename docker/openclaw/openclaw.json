@@ -141,8 +141,34 @@
       //
       // TODO: 常駐させたいチャンネル ID (C で始まる) を入れる。
       groupPolicy: 'allowlist',
+
+      // 2026-08-01 時点でワークスペースに存在する全チャンネル。
+      //
+      // requireMention は全て true。false にすると当該チャンネルの全発言に
+      // 反応してしまい、Bedrock の課金がそのまま会話量に比例する。
+      //
+      // NOTE: 許可しても Bot が参加していないチャンネルからはイベントが
+      // 届かない。現在 Bot が居るのは test-morihaya だけなので、他を使う
+      // 場合は Slack 側で /invite すること。
       channels: {
-        // 'C0123456789': { requireMention: true },
+        C0BM16GURJ7: { requireMention: true }, // test-morihaya (Bot 参加済み)
+        C08EQ609JMR: { requireMention: true }, // check-youtube-video
+        C07HG38RXC4: { requireMention: true }, // family-meeting
+        C04T2AQ5KAL: { requireMention: true }, // general
+        C07HDFDSKK5: { requireMention: true }, // notify-backlog
+        C0BKW9A0ACS: { requireMention: true }, // notify-pagerduty
+        C08P64CRRPB: { requireMention: true }, // project-desctop-pc
+        C087TMU72QY: { requireMention: true }, // project-factorio
+        C06B99FLETG: { requireMention: true }, // project-minecraft-mtr
+        C06AEDP4WA1: { requireMention: true }, // project-minecraft-python
+        C07K7R5D2UE: { requireMention: true }, // project-music
+        C0798BTJM4M: { requireMention: true }, // project-programming
+        C06D4P38E3B: { requireMention: true }, // project-roblox
+        C06CSKUV7T3: { requireMention: true }, // project-skiing
+        C04SCG7E4M9: { requireMention: true }, // random
+        C090FH9V7QU: { requireMention: true }, // team-haruhhkko
+        C04U69Q1XL7: { requireMention: true }, // test-bot
+        C05TN4CTFRT: { requireMention: true }, // 技術書典15
       },
     },
   },
