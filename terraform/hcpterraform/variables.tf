@@ -10,8 +10,11 @@ variable "tfe_organization" {
   default     = "morihaya"
 }
 
+# このルートは org 内の他リポジトリのワークスペースも管理するため、
+# VCS のバックエンドは workspaces.tf の vcs_identifier で個別に指定する。
+# ここにあるのは本リポジトリのワークスペースが使う値。
 variable "vcs_repo_identifier" {
-  description = "GitHub repository backing the VCS-driven workspaces"
+  description = "GitHub repository backing the VCS-driven workspaces of this repository"
   type        = string
   default     = "morihaya/morihaya-infra"
 }
