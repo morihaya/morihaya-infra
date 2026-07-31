@@ -142,6 +142,18 @@ resource "proxmox_virtual_environment_vm" "vm_106" {
       }
     }
 
+    # DNS は必ず明示する。
+    #
+    # 【省略するとどうなるか】
+    # PVE は nameserver 未指定のとき **ホスト (pve3) の /etc/resolv.conf を
+    # ゲストの cloud-init 設定に引き継ぐ**。pve3 は Tailscale の MagicDNS
+    # (100.100.100.100) を向いているため、Tailscale が入っていないこの VM は
+    # 名前解決が一切できなくなる。実際に初回起動では cloud-init の
+    # `apt-get update` がハングしたまま数分間止まっていた。
+    dns {
+      servers = ["192.168.1.4"] # AdGuard Home (LXC 100)
+    }
+
     user_account {
       username = "morihaya"
       # ansible 側と鍵の実体を二重管理しないよう、common ロールの
@@ -188,9 +200,13 @@ resource "proxmox_virtual_environment_vm" "vm_106" {
     type = "l26"
   }
 
-  # QEMU Guest Agent は Debian の genericcloud イメージに同梱されていないため
-  # 有効化しない (有効にすると provider が起動時にエージェント応答を待ち続ける)。
-  # 導入後に ansible で qemu-guest-agent を入れてから有効化する。
+  # QEMU Guest Agent。genericcloud イメージには同梱されていないため、
+  # ゲスト側へ qemu-guest-agent を導入してから有効化した (2026-07-31)。
+  # ゲストに入れずにこれを有効化すると、provider が起動時にエージェントの
+  # 応答を待ち続けるので順序を逆にしないこと。
+  agent {
+    enabled = true
+  }
 
   startup {
     down_delay = -1
