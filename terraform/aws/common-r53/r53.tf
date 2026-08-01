@@ -19,6 +19,12 @@ locals {
       ttl     = 299
       records = ["140.238.51.204"]
     }
+    blog = {
+      name    = "blog.morihaya.tech"
+      type    = "CNAME"
+      ttl     = 3600
+      records = ["hatenablog.com"] # はてなブログ独自ドメイン
+    }
   }
 }
 
