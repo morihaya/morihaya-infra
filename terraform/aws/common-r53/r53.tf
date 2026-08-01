@@ -23,7 +23,7 @@ locals {
       name    = "blog.morihaya.tech"
       type    = "CNAME"
       ttl     = 3600
-      records = ["hatenablog.com"] # はてなブログ独自ドメイン
+      records = ["morihaya.github.io"] # GitHub Pagesへ移行
     }
   }
 }
