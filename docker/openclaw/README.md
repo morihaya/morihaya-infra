@@ -15,6 +15,9 @@
 
 VM そのものは Terraform 管理 ([terraform/homelab/106vm_openclaw.tf](../../terraform/homelab/106vm_openclaw.tf))。
 
+同じ VM には StackChan 用の MCP ブリッジも同居している
+([docs/stackchan-mcp-bridge.md](../../docs/stackchan-mcp-bridge.md))。
+
 ## ディレクトリ構成
 
 ```
@@ -167,7 +170,59 @@ LAN へは晒していないので、手元から見る場合は SSH ポート�
 ssh -L 18789:127.0.0.1:18789 morihaya@192.168.1.12
 ```
 
-その後ブラウザで <http://127.0.0.1:18789/>。
+その後ブラウザで <http://127.0.0.1:18789/>。接続には `.env` の
+`OPENCLAW_GATEWAY_TOKEN` を Gateway Token 欄に貼る。値は VM 上で確認する。
+
+```bash
+docker exec openclaw printenv OPENCLAW_GATEWAY_TOKEN
+```
+
+> [!IMPORTANT]
+> **`openclaw dashboard --no-open` はトークン入り URL を出さない。**
+> コンテナ内にはブラウザもクリップボードもないため「Token auto-auth not
+> delivered」で終わる。トークンが未設定に見えるが、実際は `.env` から
+> 環境変数で入っている (`openclaw config get gateway` には出ない)。
+> `doctor --generate-gateway-token` は不要。
+>
+> また、ポートフォワード越しだと origin が食い違って `origin not allowed`
+> で切られる。`openclaw.json` の `gateway.controlUi.allowedOrigins` で
+> 許可済み。
+
+### MCP (channel bridge)
+
+`openclaw mcp serve` で OpenClaw のチャネルを stdio の MCP サーバとして
+公開できる。公開ツールは会話系9つ (`conversations_list` `messages_read`
+`events_poll` ほか、送信は `messages_send`、承認は `permissions_respond`)。
+
+```bash
+docker exec -i openclaw openclaw mcp serve
+```
+
+> [!CAUTION]
+> **接続時に `operator.approvals` を無条件で要求する。** 読み取り系ツールしか
+> 使わない場合でも要求される。デバイスの既定は `operator.read` +
+> `operator.write` なので、承認しないと接続できない。
+> `devices approve` にスコープを絞るオプションはない。
+
+承認まわりに落とし穴が多い。
+
+- **pending は1デバイス1枠**。後から来た要求で上書きされ、要求スコープは合算される
+- `openclaw devices list` **自身が `operator.pairing` を要求する**。確認のつもりで
+  打つと、承認したい要求を壊す。状態はホスト側のファイルを直読みする:
+
+  ```bash
+  python3 -c 'import json,sys;print(json.load(open("/home/morihaya/openclaw/data/config/devices/pending.json")))'
+  ```
+
+- `devices reject` も `operator.pairing` を要するため、CLI では却下もできない
+- 承認は Control UI からでもできるが、**ゲートウェイトークンを使えば1行で済む**
+  (origin 問題も回避できる)
+
+  ```bash
+  docker exec openclaw sh -c 'openclaw devices approve <requestId> --token "$OPENCLAW_GATEWAY_TOKEN"'
+  ```
+
+保留要求が残っていても Gateway と Slack エージェントの動作には影響しない。
 
 ### 更新
 

@@ -10,6 +10,13 @@
   //   Gateway start blocked: existing config is missing gateway.mode.
   gateway: {
     mode: 'local',
+
+    // Control UI を SSH ポートフォワード経由で開くと、ブラウザが名乗る origin
+    // (127.0.0.1) と実際の接続元 (Docker ブリッジの 172.18.0.1) が食い違い、
+    // 既定の信頼判定に落ちて `origin not allowed` で切られる。明示的に許可する。
+    controlUi: {
+      allowedOrigins: ['http://127.0.0.1:18789', 'http://localhost:18789'],
+    },
   },
 
   agents: {
