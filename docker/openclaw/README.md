@@ -357,12 +357,32 @@ docker exec -i openclaw openclaw mcp serve
 
 | 区分 | 通知タイミング |
 |---|---|
-| 年払い | 次回更新日の **7日前から当日まで毎日** |
+| 年払い | 次回更新日の **7日前から当日まで毎日**。ただし**リアクションが付いたら打ち切る** |
 | 月払い | 月額 ¥3,000 以上のものだけ、課金の **3日前に1回** |
 
 該当が無い日はスクリプトが**何も出力しない**。空振りの日に投稿しないのは
-この「出力が空」に依存しているので、`--announce` の挙動を変えるときは
-空出力で投稿が飛ばないことを確認すること。
+この「出力が空」に依存している。空出力は `command ok with no output` として
+扱われ `deliveryStatus: not-delivered` になる (投稿に失敗しているのではなく、
+そもそも投げていない)。`--announce` の挙動を変えるときはここを確認すること。
+
+### 気づいた後に鳴り続けさせない
+
+年払いを毎日鳴らすのは判断を促すためだが、気づいた後も鳴るのは鬱陶しい。
+通知に**リアクションかスレッド返信**が付いたら、その件は以後鳴らさない。
+
+判定はスクリプトが Slack の `conversations.history` を読み、同じサービス名と
+同じ更新日に触れている過去の投稿を探す方式。投稿自体は `--announce` に任せた
+ままなので、メッセージ ts を持ち回る必要がない。
+
+そのため cron の `--command` に `--slack-channel <general-channel-id>` を渡す。
+トークンは `SLACK_BOT_TOKEN` をそのまま読む (コンテナの env に入っており、
+`--command` は `sh -lc` で実行されるので見える)。**秘密情報の置き場は増えない。**
+
+> [!IMPORTANT]
+> **Slack が読めないときは通知する側に倒してある。** API エラー、スコープ不足、
+> Bot 未参加はいずれも「未反応」扱いになり、通知は止まらない。黙って握り潰して
+> 見落とすより鳴らしすぎるほうがマシという判断。理由は標準エラーに出るので
+> `cron runs` で追える (標準出力に混ぜると Slack へ流れてしまう)。
 
 スクリプトは `openclaw-homeinfo-sync.timer` (15分ごと) が同期しているクローンを
 見るので、リポジトリへ push すれば反映される。VM 側に置くファイルは無い。
@@ -376,8 +396,11 @@ docker exec -i openclaw openclaw mcp serve
 (このリポジトリは Public なのでチャンネル ID は置かない)。
 
 ```bash
-docker exec openclaw openclaw cron add --name "subscription-renewal-notice" --cron "0 9 * * *" --tz "Asia/Tokyo" --command "python3 /home/node/.openclaw/workspace/home/scripts/renewal_notify.py" --announce --channel slack --to "channel:<general-channel-id>" --best-effort-deliver --exact
+docker exec openclaw openclaw cron add --name "subscription-renewal-notice" --cron "0 9 * * *" --tz "Asia/Tokyo" --command "python3 /home/node/.openclaw/workspace/home/scripts/renewal_notify.py --slack-channel <general-channel-id>" --announce --channel slack --to "channel:<general-channel-id>" --best-effort-deliver --exact
 ```
+
+チャンネル ID が2回出てくるのは役割が違うため。`--to` は**投稿先**、
+`--slack-channel` は**リアクションを探しに行く先**。同じ値になる。
 
 `--exact` を付けているのは、既定では毎時ちょうどのジョブに最大5分のスタッガーが
 入るため。通知が9時ちょうどに来ないと気持ち悪いだけで、実害は無い。
