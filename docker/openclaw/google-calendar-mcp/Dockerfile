@@ -7,7 +7,7 @@
 # 上流は「リポジトリを clone して build」を案内しているが、ここでは npm から
 # バージョン固定で入れるだけの薄いイメージにしている。VM 上にソースツリーを
 # 抱えずに済み、更新は下の ARG を上げるだけで完結する。
-FROM node:22-bookworm-slim
+FROM node:26-bookworm-slim
 
 # 上流のリリースに追従して上げる。
 # https://www.npmjs.com/package/@cocal/google-calendar-mcp
