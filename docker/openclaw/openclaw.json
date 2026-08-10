@@ -89,6 +89,38 @@
     },
   },
 
+  // 外部ツールは MCP 経由で生やす。plugins.allow と同じく「明示的に信頼したものだけ」。
+  mcp: {
+    servers: {
+      // Google カレンダー (compose の google-calendar-mcp サービス)。
+      'google-calendar': {
+        // ---------------------------------------------------------------
+        // 【重要】パスを '/' にしてはいけない。
+        // このサーバは GET / をアカウント管理 UI に横取りしており、
+        // streamable-http の SSE ストリームと衝突する。既知ルート
+        // (/, /accounts, /health, /oauth2callback, /api/*, /styles.css)
+        // 以外は MCP トランスポートへフォールスルーするので /mcp を使う。
+        // ---------------------------------------------------------------
+        url: 'http://google-calendar-mcp:3000/mcp',
+        transport: 'streamable-http',
+
+        // 読み取りだけに限定する。MCP サーバ側の ENABLED_TOOLS でも同じものを
+        // 絞っているので、これは二重の網 (どちらかを直し忘れても書き込めない)。
+        toolFilter: {
+          include: [
+            'list-calendars',
+            'list-events',
+            'search-events',
+            'get-event',
+            'get-freebusy',
+            'get-current-time',
+            'list-colors',
+          ],
+        },
+      },
+    },
+  },
+
   models: {
     providers: {
       // Bedrock は組み込みプロバイダだが、使うモデルは明示的に宣言する必要が

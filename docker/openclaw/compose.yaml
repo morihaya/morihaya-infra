@@ -41,3 +41,56 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+  # Google カレンダーを読ませるための MCP サーバ。
+  # openclaw と同じ compose プロジェクトなので同一ネットワークに載り、
+  # サービス名 google-calendar-mcp がそのまま DNS 名になる。
+  google-calendar-mcp:
+    build: ./google-calendar-mcp
+    container_name: google-calendar-mcp
+    restart: unless-stopped
+
+    environment:
+      TRANSPORT: http
+
+      # コンテナ内 127.0.0.1 に閉じると openclaw コンテナから届かない。
+      # ports を publish しないので、到達できるのは compose の内部ネットワークだけ。
+      # (上流が「HTTP モードは認証層が無いので信頼できない NW に晒すな」と
+      #  書いているのは、この閉じ方で満たしている)
+      HOST: 0.0.0.0
+      PORT: "3000"
+      TZ: Asia/Tokyo
+
+      # OAuth クライアントの JSON。秘密情報なので VM 上に手で置く (README 参照)。
+      GOOGLE_OAUTH_CREDENTIALS: /run/secrets/gcp-oauth.keys.json
+
+      # 取得したトークンの保存先。ディレクトリではなくファイルパスを指定する。
+      GOOGLE_CALENDAR_MCP_TOKEN_PATH: /data/tokens.json
+
+      # 読み取りツールだけを登録する。書き込み系 (create-event / update-event /
+      # delete-event / respond-to-event) はそもそも公開されなくなる。
+      #
+      # NOTE: このサーバは OAuth スコープを .../auth/calendar (読み書き) に
+      # ハードコードしており readonly スコープを選べない。本当の読み取り専用は
+      # 「執事用 Google アカウントへ閲覧権限だけで共有する」という Google 側の
+      # ACL で担保している。ここと openclaw.json の toolFilter はその二重の網。
+      ENABLED_TOOLS: "list-calendars,list-events,search-events,get-event,get-freebusy,get-current-time,list-colors"
+
+    volumes:
+      - ./gcp-oauth.keys.json:/run/secrets/gcp-oauth.keys.json:ro
+      - ./data/gcal:/data
+
+    # VM 106 は 4GB しかなく openclaw と同居するので絞っておく
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+    security_opt:
+      - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

@@ -34,6 +34,10 @@ override.tf.json
 # Local environment files
 .env
 
+# Google OAuth クライアントの秘密鍵 (client_secret を含む)。
+# 実体は VM 106 の ~/openclaw/gcp-oauth.keys.json にだけ置く。
+gcp-oauth.keys.json
+
 # mise のローカル設定 (マシン固有。TF_CLI_CONFIG_FILE などを設定する)
 mise.local.toml
 .mise.local.toml
