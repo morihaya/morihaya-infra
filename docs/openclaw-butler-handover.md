@@ -178,6 +178,11 @@
 ### Phase 4: 執事化・運用
 1. 自宅情報(ゴミ出し日、家族の予定ルール等)をワークスペースファイル/メモリに投入
 2. cron/heartbeat で定時通知(朝のブリーフィング等)。**heartbeat も Bedrock 呼び出しを消費する**ので頻度に注意
+   - **サブスク更新の通知は実装済み**(2026-08-10)。毎日 9:00 JST に `#general` へ。
+     判定は家庭情報リポジトリのスクリプトが行い、cron は `--command` でそれを
+     実行するだけなので **Bedrock を一切消費しない**。定時通知を足すときは、
+     エージェントに考えさせる必要が本当にあるか先に検討する。
+     手順は [docker/openclaw/README.md](../docker/openclaw/README.md#サブスク更新の通知-cron)
 3. セキュリティ強化: サンドボックス有効化、ツール許可リスト、Slack 側は家族のユーザー ID allowlist、ClawHub スキルは導入前にソースを読む
 4. 初回課金発生後、Cost Explorer で実際の Service 名を確認(Anthropic モデルは Marketplace 経由請求のため「... (Amazon Bedrock Edition)」等の別名になる可能性)。異なる場合は `budgets.tf` の `cost_filter` に追記
 

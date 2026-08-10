@@ -348,6 +348,58 @@ docker exec -i openclaw openclaw mcp serve
 
 保留要求が残っていても Gateway と Slack エージェントの動作には影響しない。
 
+### サブスク更新の通知 (cron)
+
+サブスクの更新日が近づいたら Slack の `#general` へ `@channel` で流し、継続するか
+判断させる。**判定は LLM にやらせない。** 家庭情報リポジトリ (private:
+`morihaya-homeinfo`) の `scripts/renewal_notify.py` が日付を計算し、cron は
+`--command` でそれを実行して標準出力をそのまま流すだけにしてある。
+
+| 区分 | 通知タイミング |
+|---|---|
+| 年払い | 次回更新日の **7日前から当日まで毎日** |
+| 月払い | 月額 ¥3,000 以上のものだけ、課金の **3日前に1回** |
+
+該当が無い日はスクリプトが**何も出力しない**。空振りの日に投稿しないのは
+この「出力が空」に依存しているので、`--announce` の挙動を変えるときは
+空出力で投稿が飛ばないことを確認すること。
+
+スクリプトは `openclaw-homeinfo-sync.timer` (15分ごと) が同期しているクローンを
+見るので、リポジトリへ push すれば反映される。VM 側に置くファイルは無い。
+
+> [!IMPORTANT]
+> **Bot が `#general` に参加していないとイベントも配信も届かない。**
+> Slack 側で `/invite` しておく。`openclaw.json` の `channels` に ID がある
+> だけでは足りない (許可と参加は別)。
+
+登録は一度だけ。`<general-channel-id>` は VM 上の `openclaw.json` から引く
+(このリポジトリは Public なのでチャンネル ID は置かない)。
+
+```bash
+docker exec openclaw openclaw cron add --name "subscription-renewal-notice" --cron "0 9 * * *" --tz "Asia/Tokyo" --command "python3 /home/node/.openclaw/workspace/home/scripts/renewal_notify.py" --announce --channel slack --to "channel:<general-channel-id>" --best-effort-deliver --exact
+```
+
+`--exact` を付けているのは、既定では毎時ちょうどのジョブに最大5分のスタッガーが
+入るため。通知が9時ちょうどに来ないと気持ち悪いだけで、実害は無い。
+
+動作確認は日付を指定して手元で回すのが早い (Slack へは飛ばない)。
+
+```bash
+docker exec openclaw python3 /home/node/.openclaw/workspace/home/scripts/renewal_notify.py --today 2026-11-13
+```
+
+登録後の確認と手動実行。**`cron run` は実際に Slack へ投稿する**ので、
+試すなら `--to` を test チャンネルにしたジョブを別に作ること。
+
+```bash
+docker exec openclaw openclaw cron list
+```
+
+> [!CAUTION]
+> **`cron add` は初回に Gateway のスコープ昇格を要求する。** 承認しないと
+> `pairing required: device is asking for more scopes than currently approved`
+> で失敗する。上の「MCP (channel bridge)」節と同じ手順で承認する。
+
 ### 更新
 
 ```bash
