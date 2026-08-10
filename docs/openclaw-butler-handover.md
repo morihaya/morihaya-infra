@@ -3,7 +3,13 @@
 - 作成: 2026-07-29(Claude Fable 5 セッションからの引き継ぎ用)
 - 更新: 2026-07-30(Phase 1 マージ済み、Phase 2 の VM コード化まで完了)
 - 目的: Proxmox 環境に OpenClaw を導入し、家族用 Slack に常駐する執事型 AI エージェントを構築する
-- 状態: **AWS (#84) と VM (#85-#87) は apply 済み。VM がシリアルコンソール未定義で起動できず修正中**
+- 状態: **Phase 1-3 は完了 (VM 106 稼働中・Slack 常駐中)。Phase 4 と 5 が進行中**
+- 更新: 2026-08-09(Phase 5 として Google カレンダー連携を追加)
+
+> [!NOTE]
+> **この文書は Phase 2 でつまずいていた頃の記述が多く残っている。**
+> 以降の「起動しない」系の記述は解決済みの記録として読むこと。
+> 現状の構成と運用手順は [docker/openclaw/README.md](../docker/openclaw/README.md) が正。
 
 ## 0. 現在の進捗
 
@@ -172,8 +178,32 @@
 ### Phase 4: 執事化・運用
 1. 自宅情報(ゴミ出し日、家族の予定ルール等)をワークスペースファイル/メモリに投入
 2. cron/heartbeat で定時通知(朝のブリーフィング等)。**heartbeat も Bedrock 呼び出しを消費する**ので頻度に注意
+   - **サブスク更新の通知は実装済み**(2026-08-10)。毎日 9:00 JST に `#general` へ。
+     判定は家庭情報リポジトリのスクリプトが行い、cron は `--command` でそれを
+     実行するだけなので **Bedrock を一切消費しない**。定時通知を足すときは、
+     エージェントに考えさせる必要が本当にあるか先に検討する。
+     手順は [docker/openclaw/README.md](../docker/openclaw/README.md#サブスク更新の通知-cron)
 3. セキュリティ強化: サンドボックス有効化、ツール許可リスト、Slack 側は家族のユーザー ID allowlist、ClawHub スキルは導入前にソースを読む
 4. 初回課金発生後、Cost Explorer で実際の Service 名を確認(Anthropic モデルは Marketplace 経由請求のため「... (Amazon Bedrock Edition)」等の別名になる可能性)。異なる場合は `budgets.tf` の `cost_filter` に追記
+
+### Phase 5: Google カレンダー連携(2026-08-09 着手)
+
+`@cocal/google-calendar-mcp` を別コンテナで動かし、MCP (streamable-http) で繋ぐ。
+**まず読み取り専用**で入れて、運用が安定してから書き込みを検討する。
+
+手順とハマりどころは [docker/openclaw/README.md](../docker/openclaw/README.md#google-カレンダー連携-mcp) に集約した。
+設計判断だけここに残す。
+
+| 判断 | 理由 |
+|---|---|
+| マネージド MCP (Composio 等) は不採用 | 家族の予定が第三者を経由する。Gemini 無料枠を却下したのと同じ筋 |
+| **別コンテナ**で動かす | エージェントはシェルを持つため、同居させると OAuth トークンを自身で読めてしまう |
+| **執事用の Google アカウント**を新設し、閲覧権限だけで共有 | このサーバは OAuth スコープが読み書き固定で readonly を選べない。本当の読み取り専用は Google の ACL 側でしか作れない |
+| npm からバージョン固定の薄い Dockerfile | 上流は clone & build 方式だが、VM 上にソースツリーを抱えたくない |
+
+> [!CAUTION]
+> **同意画面をテストモードのままにしないこと。** リフレッシュトークンが 7 日で失効し、
+> 常駐エージェントとして機能しなくなる。「本番」へ昇格させる。
 
 ## 4. 既知の注意点・ハマりどころ
 
