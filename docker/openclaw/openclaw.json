@@ -92,20 +92,44 @@
   // 外部ツールは MCP 経由で生やす。plugins.allow と同じく「明示的に信頼したものだけ」。
   mcp: {
     servers: {
-      // Google カレンダー (compose の google-calendar-mcp サービス)。
+      // Google カレンダー。OpenClaw が子プロセスとして起動する (stdio)。
+      //
+      // ---------------------------------------------------------------
+      // 【重要】HTTP モードは使えない。stdio にすること。
+      //
+      // 上流の HTTP モードは transport を 1 個だけ作って使い回しており、
+      // MCP SDK がステートレスで要求する「1 リクエスト = 1 transport」と
+      // 噛み合っていない。一方 OpenClaw は MCP ランタイムをキャッシュして
+      // 常駐接続を張り、initialize は 1 回しか行わない。この 2 つは両立せず、
+      // どちらに寄せても壊れる:
+      //   - transport を毎回作り直す → OpenClaw 側のセッションが切れて
+      //     「1 回目は成功、2 回目以降は必ず Request timed out」になる
+      //   - 作り直さない → SDK が本文なしの 500 を返す
+      // SDK 自身が "use a separate Protocol instance per connection" と
+      // 言っており、正しい修正は上流が Server ごとリクエスト単位で作る形。
+      // 詳細は docs/openclaw-butler-handover.md の Phase 5 を参照。
+      // ---------------------------------------------------------------
       'google-calendar': {
-        // ---------------------------------------------------------------
-        // 【重要】パスを '/' にしてはいけない。
-        // このサーバは GET / をアカウント管理 UI に横取りしており、
-        // streamable-http の SSE ストリームと衝突する。既知ルート
-        // (/, /accounts, /health, /oauth2callback, /api/*, /styles.css)
-        // 以外は MCP トランスポートへフォールスルーするので /mcp を使う。
-        // ---------------------------------------------------------------
-        url: 'http://google-calendar-mcp:3000/mcp',
-        transport: 'streamable-http',
+        // 実体は永続領域に置いてある。イメージを pull し直しても消えない。
+        //   docker compose exec openclaw \
+        //     npm install --prefix /home/node/.openclaw/vendor \
+        //       @cocal/google-calendar-mcp@2.6.2
+        command: '/home/node/.openclaw/vendor/node_modules/.bin/google-calendar-mcp',
+        args: ['start'],
 
-        // 読み取りだけに限定する。MCP サーバ側の ENABLED_TOOLS でも同じものを
-        // 絞っているので、これは二重の網 (どちらかを直し忘れても書き込めない)。
+        env: {
+          // compose でこのコンテナにマウントしている
+          GOOGLE_OAUTH_CREDENTIALS: '/run/secrets/gcp-oauth.keys.json',
+          GOOGLE_CALENDAR_MCP_TOKEN_PATH: '/run/gcal/tokens.json',
+
+          // サーバ側でも読み取りツールだけを登録する。
+          // NOTE: これは manage-accounts を止められない (指定外でも公開される)。
+          // 実際に止めているのは下の toolFilter のほう。
+          ENABLED_TOOLS: 'list-calendars,list-events,search-events,get-event,get-freebusy,get-current-time,list-colors',
+        },
+
+        // 読み取りだけに限定する。上の ENABLED_TOOLS と合わせて二重の網。
+        // manage-accounts を実際に落としているのはこちらなので、消さないこと。
         toolFilter: {
           include: [
             'list-calendars',

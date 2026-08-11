@@ -47,12 +47,6 @@ updates:
     schedule:
       interval: "weekly"
 
-  # Docker - OpenClaw のカレンダー MCP サーバ (ベースイメージ追従)
-  - package-ecosystem: "docker"
-    directory: "/docker/openclaw/google-calendar-mcp"
-    schedule:
-      interval: "weekly"
-
   # GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
