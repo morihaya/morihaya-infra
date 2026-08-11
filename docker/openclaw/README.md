@@ -24,7 +24,6 @@ VM そのものは Terraform 管理 ([terraform/homelab/106vm_openclaw.tf](../..
 ```
 ~/openclaw/                    # VM 106 上
 ├── compose.yaml               # このリポジトリから配布
-├── google-calendar-mcp/       # このリポジトリから配布 (Dockerfile)
 ├── .env                       # 秘密情報 (git 管理外・手で作る)
 ├── gcp-oauth.keys.json        # 秘密情報 (git 管理外・手で置く)
 └── data/
@@ -158,12 +157,32 @@ docker compose logs -f
 ## Google カレンダー連携 (MCP)
 
 [`@cocal/google-calendar-mcp`](https://github.com/nspady/google-calendar-mcp) を
-**別コンテナ**で動かし、OpenClaw から `streamable-http` の MCP サーバとして参照する。
-`ports` は publish せず、compose の内部ネットワークからのみ到達させる。
+**stdio** で繋ぐ。OpenClaw が子プロセスとして起動する。
 
-別コンテナにしているのは隔離のため。エージェントはシェルを持つので、同じコンテナに
-OAuth トークンを置くとエージェント自身 (= プロンプトインジェクションの経路) から
-ファイルとして読める。
+> [!CAUTION]
+> **HTTP モードは使わないこと。別コンテナ + `streamable-http` は一度試して破棄した。**
+>
+> 上流の HTTP モードは transport を 1 個だけ作って全リクエストで使い回しており、
+> MCP SDK がステートレスで要求する「1 リクエスト = 1 transport」と噛み合っていない。
+> 一方 OpenClaw は MCP ランタイムをキャッシュして常駐接続を張り、`initialize` は
+> 1 回しか行わない。**どちらに寄せても壊れる。**
+>
+> | 寄せ方 | 結果 |
+> |---|---|
+> | transport を毎回作り直す | OpenClaw のセッションが切れ、**1 回目は成功するのに 2 回目以降が必ず `Request timed out`** |
+> | 作り直さない | SDK が**本文なしの 500**。サーバログには何も出ず、`/health` は 200 のまま |
+>
+> SDK 自身が `use a separate Protocol instance per connection` と言っており、
+> 正しい修正は上流が Server ごとリクエスト単位で作ること。バンドルへのパッチでは
+> 届かない範囲なので stdio に切り替えた。経緯は
+> [handover の Phase 5](../../docs/openclaw-butler-handover.md) を参照。
+
+パッケージは**永続領域**に入れる。`~/.openclaw/` はバインドマウントなので、
+イメージを pull し直しても消えない。
+
+```bash
+docker compose exec openclaw npm install --prefix /home/node/.openclaw/vendor @cocal/google-calendar-mcp@2.6.2
+```
 
 ### 読み取り専用をどこで担保しているか
 
@@ -173,9 +192,16 @@ OAuth トークンを置くとエージェント自身 (= プロンプトイン�
 
 | 層 | 手段 | 効果 |
 |---|---|---|
-| Google の ACL | 執事用アカウントへ**閲覧権限だけ**で共有 | トークンが漏れても書けない。これが本丸 |
-| MCP サーバ | compose の `ENABLED_TOOLS` | 書き込みツールが登録されない |
+| Google の ACL | 執事役アカウントへ**閲覧権限だけ**で共有 | トークンが漏れても書けない。**これが本丸** |
+| MCP サーバ | `openclaw.json` の `env.ENABLED_TOOLS` | 書き込みツールが登録されない |
 | OpenClaw | `openclaw.json` の `toolFilter.include` | 二重の網 |
+
+> [!NOTE]
+> **stdio では OAuth トークンがエージェントから読める。** エージェントはシェルを
+> 持つので、`/run/secrets/` と `/run/gcal/` のファイルに触れる。これを許容している
+> のは、Google 側で閲覧権限しか渡していないから — 漏れても「エージェントが既に
+> 読めるカレンダーを読める」だけで、書き込みは ACL で不可。
+> **変更権限へ上げるなら、この前提が崩れる点を再検討すること。**
 
 書き込みを許したくなったら、まず Google 側で対象カレンダーだけを「変更権限」に上げ、
 それから上の 2 つに書き込みツールを足す。順番を逆にしない。
@@ -239,7 +265,7 @@ chmod 600 ~/openclaw/gcp-oauth.keys.json
 | OAuth クライアント | Desktop app `openclaw-vm106` |
 | 認可するアカウント | Android 開発用アカウント (カレンダー未使用) |
 
-### 2. 置き場を先に作ってからビルド
+### 2. 置き場を先に作る
 
 > [!WARNING]
 > **`gcp-oauth.keys.json` を置く前に `up` しないこと。** bind mount の元が無いと
@@ -251,10 +277,6 @@ chmod 600 ~/openclaw/gcp-oauth.keys.json
 
 ```bash
 mkdir -p ~/openclaw/data/gcal && ls -l ~/openclaw/gcp-oauth.keys.json
-```
-
-```bash
-cd ~/openclaw && docker compose build google-calendar-mcp
 ```
 
 ### 3. 一度きりの OAuth
@@ -269,52 +291,48 @@ ssh -L 3500:127.0.0.1:3500 morihaya@192.168.1.12
 その SSH セッションの中で:
 
 ```bash
-cd ~/openclaw && docker compose run --rm -p 127.0.0.1:3500:3500 google-calendar-mcp google-calendar-mcp auth
+cd ~/openclaw && docker compose exec openclaw /home/node/.openclaw/vendor/node_modules/.bin/google-calendar-mcp auth
 ```
 
-標準エラーに出る URL を手元のブラウザで開き、**執事アカウントで**承認する。
+標準エラーに出る URL を手元のブラウザで開き、**執事役アカウントで**承認する。
 トークンは `~/openclaw/data/gcal/tokens.json` に落ちて永続する。
 
-> [!TIP]
-> HTTP モードの `/accounts` 画面からも認証できる作りだが、リダイレクト URI を
-> 設定値の host から組み立てるため、`HOST=0.0.0.0` だと
-> `http://0.0.0.0:3000/oauth2callback` になって Google に弾かれる。CLI の
-> `auth` を使うこと。
+> [!IMPORTANT]
+> **承認するアカウントを間違えないこと。** 本アカウントで承認すると、トークンが
+> 自分の全カレンダーへの書き込み権を持ってしまい、読み取り専用の前提が崩れる。
 
 ### 4. 起動と確認
 
 ```bash
-cd ~/openclaw && docker compose up -d google-calendar-mcp && docker compose restart openclaw
+cd ~/openclaw && docker compose up -d
 ```
 
-サーバ単体の疎通:
+OpenClaw から見えているか。`stdio tool-filtered` と**読み取り 7 つ**が出ればよい。
 
 ```bash
-docker compose exec openclaw curl -s http://google-calendar-mcp:3000/health
+docker compose exec openclaw openclaw mcp status
 ```
 
-OpenClaw から見えているか。**読み取り 7 つだけ**が並び、`create-event` や
-`delete-event` が出ていないことを確認する。
-
 ```bash
-docker compose exec openclaw openclaw mcp status --verbose
+docker compose exec openclaw openclaw mcp probe google-calendar
 ```
 
 ### 落とし穴
 
-- **上流の HTTP モードは素のままでは動かない。** transport を全リクエストで使い回して
-  いるため、コンテナ起動後の 1 回目の POST しか通らない。2 回目以降は本文なしの 500 に
-  なり、しかもサーバは起動して `/health` も 200 を返し続けるので気づきにくい。
-  [patch-http-transport.js](google-calendar-mcp/patch-http-transport.js) で回避している
 - **`ENABLED_TOOLS` は `manage-accounts` を止められない。** サーバは指定外のこのツールも
   公開してくる (サーバ生では 8 個、`ENABLED_TOOLS` は 7 個)。止めているのは
   `openclaw.json` の `toolFilter.include` のほう。**二重の網が実際に効いている箇所**なので、
   どちらか一方に減らさないこと
-- **エンドポイントのパスを `/` にしない。** このサーバは `GET /` をアカウント管理 UI に
-  横取りしており、streamable-http の SSE ストリームと衝突する。`/mcp` を使う
-  (既知ルート以外は MCP トランスポートへフォールスルーする)
-- **`Origin` ヘッダ検査**がある。localhost 以外の origin は 403 になる。
-  OpenClaw 側は Origin を送らないので通るが、403 が出たらここを疑う
+- **エージェントは `calendarId: "primary"` を使いたがる。** primary は執事役アカウント
+  自身のカレンダーで、常に空。放っておくと「今日は予定がありません」と自信を持って
+  答える。どのカレンダーを見るかは workspace の `TOOLS.md` に書いてある
+  (家庭の情報なのでこのリポジトリには入れない)
+- **カレンダーは共有しただけでは見えない。** 受け取り側が招待メールから追加して初めて
+  `calendarList` に載る。`list-calendars` に執事自身の primary と祝日しか出てこない
+  なら、まだ追加されていない
+- **執事役アカウントのカレンダーのタイムゾーンを東京にしておく。** 既定は UTC で、
+  API の返す時刻も UTC 基準になる。コンテナの `TZ` は別物なので効かない。
+  9 時間ずれた回答をする事故につながる
 - **予定のタイトルと説明は外部入力**になる。招待経由で第三者が書き込める欄なので、
   プロンプトインジェクションの面が一段広がる
 - **予定一覧はトークンを食う。** cron で朝のブリーフィングを回すなら期間を絞る
