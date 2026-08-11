@@ -193,6 +193,14 @@ OAuth トークンを置くとエージェント自身 (= プロンプトイン�
    > 現在は Android 開発用アカウント (カレンダー未使用) を流用している。
 2. 自分と家族のカレンダーを、そのアカウントへ
    **「予定の表示 (すべての予定の詳細)」** で共有する。「変更権限」にはしない
+
+   > [!IMPORTANT]
+   > **共有しただけでは API から見えない。受け取り側での「追加」が要る。**
+   > Google は共有時に招待メールを送り、そのリンクを踏んで追加して初めて
+   > `calendarList` に載る。共有した側の画面では完了して見えるので気づきにくい。
+   >
+   > 見えているかは `list-calendars` で確認する。執事自身の primary と
+   > 「日本の祝日」しか出てこないなら、まだ追加されていない。
 3. **GCP プロジェクトは新規に作り**、**Google Calendar API を有効化**する
 
    > [!IMPORTANT]
@@ -294,6 +302,14 @@ docker compose exec openclaw openclaw mcp status --verbose
 
 ### 落とし穴
 
+- **上流の HTTP モードは素のままでは動かない。** transport を全リクエストで使い回して
+  いるため、コンテナ起動後の 1 回目の POST しか通らない。2 回目以降は本文なしの 500 に
+  なり、しかもサーバは起動して `/health` も 200 を返し続けるので気づきにくい。
+  [patch-http-transport.js](google-calendar-mcp/patch-http-transport.js) で回避している
+- **`ENABLED_TOOLS` は `manage-accounts` を止められない。** サーバは指定外のこのツールも
+  公開してくる (サーバ生では 8 個、`ENABLED_TOOLS` は 7 個)。止めているのは
+  `openclaw.json` の `toolFilter.include` のほう。**二重の網が実際に効いている箇所**なので、
+  どちらか一方に減らさないこと
 - **エンドポイントのパスを `/` にしない。** このサーバは `GET /` をアカウント管理 UI に
   横取りしており、streamable-http の SSE ストリームと衝突する。`/mcp` を使う
   (既知ルート以外は MCP トランスポートへフォールスルーする)

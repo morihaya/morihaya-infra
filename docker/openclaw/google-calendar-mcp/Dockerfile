@@ -16,6 +16,12 @@ ARG GCAL_MCP_VERSION=2.6.2
 RUN npm install -g "@cocal/google-calendar-mcp@${GCAL_MCP_VERSION}" \
     && npm cache clean --force
 
+# 上流の HTTP モードは transport を全リクエストで使い回しており、コンテナ起動後
+# 1回目の POST しか通らない。パッチの詳細と、更新時にどう判断するかはスクリプト
+# 冒頭のコメントを参照。アンカーが見つからなければ build はここで失敗する。
+COPY patch-http-transport.js /tmp/patch-http-transport.js
+RUN node /tmp/patch-http-transport.js && rm /tmp/patch-http-transport.js
+
 # トークンの置き場。compose 側でホストのディレクトリを載せる。
 # node ユーザ (uid 1000) が書き込むので所有者を合わせておく。
 RUN install -d -o node -g node /data
