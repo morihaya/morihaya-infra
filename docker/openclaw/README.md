@@ -412,7 +412,9 @@ docker exec -i openclaw openclaw mcp serve
 
 ### 朝のブリーフィング (cron)
 
-毎朝 9:00 JST に、その日に知っておくべきことを `#general` へ 1 通だけ流す。
+毎朝 9:00 JST に、その日に知っておくべきことを `#notify-openclaw` へ 1 通だけ流す。
+家族が会話する `#general` ではなく通知専用チャンネルに送るのは、朝の自動投稿で
+会話が流れるのを避けるため。
 実体は家庭情報リポジトリ (private: `morihaya-homeinfo`) の
 `scripts/morning_brief.py`。cron は `--command` でこれを実行するだけ。
 
@@ -471,6 +473,15 @@ docker exec -i openclaw openclaw mcp serve
 > 現在は **✅ が付いている親だけスレッドを読みに行き、親 + 返信を連結した本文**から
 > 該当件を探す。ここを触るときは「Bot 自身のスレッド返信で止まらないこと」を必ず
 > 回帰確認すること。
+>
+> 実投稿で確認した親メッセージの状態 (投稿直後)。`reply_count` が既に 1 になって
+> いるのが分かる。**旧ロジックはこれを「人間が反応した」と読む。**
+>
+> ```
+> text       : <!channel> *8/15(土)* サブスク1件
+> reply_count: 1        ← 自分のスレッド返信
+> reactions  : []
+> ```
 
 Slack が読めないときは通知する側に倒してある (API エラー・スコープ不足・Bot 未参加は
 いずれも「未対応」扱い)。理由は標準エラーに出るので `cron runs` で追える。
