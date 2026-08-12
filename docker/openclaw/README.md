@@ -410,82 +410,122 @@ docker exec -i openclaw openclaw mcp serve
 
 保留要求が残っていても Gateway と Slack エージェントの動作には影響しない。
 
-### サブスク更新の通知 (cron)
+### 朝のブリーフィング (cron)
 
-サブスクの更新日が近づいたら Slack の `#general` へ `@channel` で流し、継続するか
-判断させる。**判定は LLM にやらせない。** 家庭情報リポジトリ (private:
-`morihaya-homeinfo`) の `scripts/renewal_notify.py` が日付を計算し、cron は
-`--command` でそれを実行して標準出力をそのまま流すだけにしてある。
+毎朝 9:00 JST に、その日に知っておくべきことを `#notify-openclaw` へ 1 通だけ流す。
+家族が会話する `#general` ではなく通知専用チャンネルに送るのは、朝の自動投稿で
+会話が流れるのを避けるため。
+実体は家庭情報リポジトリ (private: `morihaya-homeinfo`) の
+`scripts/morning_brief.py`。cron は `--command` でこれを実行するだけ。
 
-| 区分 | 通知タイミング |
+> [!IMPORTANT]
+> **いちばん大事な性質は「何も無い日は一切投稿しない」こと。** 何もない日に鳴る
+> 通知は、いずれ全員が無視するようになる。そのため判定は LLM に委ねず、
+> スクリプトが機械的に決める。3系統すべてが空なら Slack を叩かずに終了する。
+> **Bedrock も一切消費しない。**
+
+インプットは 3 系統。
+
+| 系統 | 取得元 |
 |---|---|
-| 年払い | 次回更新日の **7日前から当日まで毎日** |
-| 月払い | 月額 ¥3,000 以上のものだけ、課金日の **3日前から当日まで毎日** |
+| 今日の予定 | Google カレンダー (`--calendar` で指定したものだけ。**祝日は入れない**) |
+| サブスクの更新 | `renewal_notify.py` の判定を import して再利用 |
+| リマインダ | `workspace/reminders.md` (エージェントが追記、当日以前の行を拾う) |
 
-どちらも**リアクションが付いたら打ち切る**(次節)。月払いは課金日が毎月
-変わるので、翌月分はまた新しく鳴る。
+> [!NOTE]
+> **カレンダーは MCP を介さず API を直叩きしている。** MCP はエージェント側の口
+> なので、Bedrock を使わない cron からは呼べない。トークンは MCP サーバと同じ
+> ファイルを**読むだけ**で書き戻さない (競合させないため)。
 
-該当が無い日はスクリプトが**何も出力しない**。空振りの日に投稿しないのは
-この「出力が空」に依存している。空出力は `command ok with no output` として
-扱われ `deliveryStatus: not-delivered` になる (投稿に失敗しているのではなく、
-そもそも投げていない)。`--announce` の挙動を変えるときはここを確認すること。
+#### チャンネルを流さないための2段構え
 
-### 気づいた後に鳴り続けさせない
-
-毎日鳴らすのは判断を促すためだが、気づいた後も鳴るのは鬱陶しい。
-通知に**リアクションかスレッド返信**が付いたら、その件は以後鳴らさない。
-
-判定はスクリプトが Slack の `conversations.history` を読み、同じサービス名と
-同じ日付に触れている過去の投稿を探す方式。投稿自体は `--announce` に任せた
-ままなので、メッセージ ts を持ち回る必要がない。
-
-> [!IMPORTANT]
-> **リアクション1つで、そのメッセージに挙がっていた件が全て止まる。**
-> 件ごとに個別に止める仕組みは無い。片方の判断が済んでいないうちは
-> リアクションを付けないでおくこと。
-
-そのため cron の `--command` に `--slack-channel <general-channel-id>` を渡す。
-トークンは `SLACK_BOT_TOKEN` をそのまま読む (コンテナの env に入っており、
-`--command` は `sh -lc` で実行されるので見える)。**秘密情報の置き場は増えない。**
-
-> [!IMPORTANT]
-> **Slack が読めないときは通知する側に倒してある。** API エラー、スコープ不足、
-> Bot 未参加はいずれも「未反応」扱いになり、通知は止まらない。黙って握り潰して
-> 見落とすより鳴らしすぎるほうがマシという判断。理由は標準エラーに出るので
-> `cron runs` で追える (標準出力に混ぜると Slack へ流れてしまう)。
-
-スクリプトは `openclaw-homeinfo-sync.timer` (15分ごと) が同期しているクローンを
-見るので、リポジトリへ push すれば反映される。VM 側に置くファイルは無い。
-
-> [!IMPORTANT]
-> **Bot が `#general` に参加していないとイベントも配信も届かない。**
-> Slack 側で `/invite` しておく。`openclaw.json` の `channels` に ID がある
-> だけでは足りない (許可と参加は別)。
-
-登録は一度だけ。`<general-channel-id>` は VM 上の `openclaw.json` から引く
-(このリポジトリは Public なのでチャンネル ID は置かない)。
-
-```bash
-docker exec openclaw openclaw cron add --name "subscription-renewal-notice" --cron "0 9 * * *" --tz "Asia/Tokyo" --command "python3 /home/node/.openclaw/workspace/home/scripts/renewal_notify.py --slack-channel <general-channel-id>" --announce --channel slack --to "channel:<general-channel-id>" --best-effort-deliver --exact
+```
+親  : 8/12(水) 予定3件 / サブスク1件      ← 1行。開くか決められる
+└─ スレッドに各セクションの詳細
 ```
 
-チャンネル ID が2回出てくるのは役割が違うため。`--to` は**投稿先**、
-`--slack-channel` は**リアクションを探しに行く先**。同じ値になる。
+親を日付だけにしないのは、それだと開くべきか判断できず「毎回開く」か「一切
+開かない」のどちらかに倒れるため。件数を出せば 1 行のまま判断できる。
 
-`--exact` を付けているのは、既定では毎時ちょうどのジョブに最大5分のスタッガーが
-入るため。通知が9時ちょうどに来ないと気持ち悪いだけで、実害は無い。
+`@channel` は **要判断の件 (サブスク) がある日だけ**付ける。**Slack のスレッド
+返信は通知が飛ばない**ので、人間が決めないと進まない件は親行の側に出す必要がある。
+予定やリマインダだけの日は静かに投稿する。
 
-動作確認は日付を指定して手元で回すのが早い (Slack へは飛ばない)。
+#### 気づいた後に鳴り続けさせない
+
+サブスクは更新日まで毎日鳴る。止めるには**親メッセージに :white_check_mark: を付ける**。
+
+> [!IMPORTANT]
+> **合図は ✅ 限定。** 何でもいいリアクションにすると 👀 や 😂 のような何気ない
+> 反応で判断が止まってしまう。押し忘れても鳴り続けるだけなので、見落とすより
+> 安全な側に倒れる。受け付ける絵文字は `--ack-emoji` で変えられる。
+>
+> **リアクションは親メッセージに付けること。** スレッド返信側では効かない。
+
+> [!CAUTION]
+> **判定は `renewal_notify.py` のものから作り直してある。元のままだと必ず誤爆する。**
+>
+> 元の実装は `reply_count` も「反応」と見なしていた。ブリーフィングは自分で
+> スレッド返信を付けるので、投稿した瞬間に `reply_count >= 1` になり、**初日から
+> 「対応済み」と誤判定されて二度と鳴らなくなる。** さらに `conversations.history`
+> はスレッド返信を返さないため、明細をスレッドへ移すと本文マッチ自体が効かない。
+>
+> 現在は **✅ が付いている親だけスレッドを読みに行き、親 + 返信を連結した本文**から
+> 該当件を探す。ここを触るときは「Bot 自身のスレッド返信で止まらないこと」を必ず
+> 回帰確認すること。
+>
+> 実投稿で確認した親メッセージの状態 (投稿直後)。`reply_count` が既に 1 になって
+> いるのが分かる。**旧ロジックはこれを「人間が反応した」と読む。**
+>
+> ```
+> text       : <!channel> *8/15(土)* サブスク1件
+> reply_count: 1        ← 自分のスレッド返信
+> reactions  : []
+> ```
+
+Slack が読めないときは通知する側に倒してある (API エラー・スコープ不足・Bot 未参加は
+いずれも「未対応」扱い)。理由は標準エラーに出るので `cron runs` で追える。
+また**予期しない例外はチャンネルへ短く投稿する** — 毎朝黙って落ちているのが
+いちばん気づけないため。
+
+#### リマインダの置き場
+
+`workspace/reminders.md` に `- YYYY-MM-DD | 本文` の形式で 1 行 1 件。
+エージェントへの指示は workspace の `TOOLS.md` に書いてある。
+
+> [!WARNING]
+> **`workspace/home/` の下に置いてはいけない。** `openclaw-homeinfo-sync.timer`
+> が 15 分ごとに `git reset --hard` + `git clean -fd` するので、エージェントが
+> 書いても消える。`workspace` 直下はそれ自体が別の git リポジトリで
+> `backup-state.sh` の対象。
+
+#### 登録
+
+登録は一度だけ。チャンネル ID は VM 上の `openclaw.json` から引く
+(このリポジトリは Public なので置かない)。
 
 ```bash
-docker exec openclaw python3 /home/node/.openclaw/workspace/home/scripts/renewal_notify.py --today 2026-11-13
+docker exec openclaw openclaw cron add --name "morning-brief" --cron "0 9 * * *" --tz "Asia/Tokyo" --command "python3 /home/node/.openclaw/workspace/home/scripts/morning_brief.py --slack-channel <general-channel-id> --calendar 林家ファミリー" --announce --channel slack --to "channel:<general-channel-id>" --best-effort-deliver --exact
 ```
 
-登録後の確認と手動実行。**`cron run` は実際に Slack へ投稿する**ので、
-試すなら `--to` を test チャンネルにしたジョブを別に作ること。
+スクリプトが自分で `chat.postMessage` するので、`--announce` 経由では何も流れない
+(標準出力は常に空)。それでも `--to` を明示しているのは、既定の `last` だと
+`no route, will fail-closed` になるため。`--exact` は既定の最大 5 分のスタッガーを
+避けるため。
+
+> [!IMPORTANT]
+> **`cron rm` は名前ではなく ID を取る。** `cron list` で ID を引いてから消す。
+
+動作確認は日付を指定した `--dry-run` が早い (Slack へは飛ばない)。
 
 ```bash
-docker exec openclaw openclaw cron list
+docker compose exec openclaw python3 /home/node/.openclaw/workspace/home/scripts/morning_brief.py --today 2026-08-15 --calendar 林家ファミリー --dry-run
+```
+
+**まず「何も無い日」で試して、出力が空になることを確認する。** これが最優先要件そのもの。
+
+```bash
+docker compose exec openclaw openclaw cron list
 ```
 
 > [!CAUTION]
