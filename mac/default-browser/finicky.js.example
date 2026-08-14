@@ -1,0 +1,27 @@
+// Finicky config -- routes every opened link to a browser.
+//
+// Template: copy to ~/.finicky.js. The live file is deliberately not tracked in
+// this repository, so machine-specific routing rules stay off GitHub.
+//
+// The DEFAULT_BROWSER line below is rewritten by `set-default-browser`.
+// Keep the `finicky-managed` marker comment on it -- the script matches on it.
+//
+// Finicky 4.2.2 does NOT hot-reload this file, so `set-default-browser` restarts
+// Finicky after every edit. If you edit this file by hand, restart Finicky
+// yourself or the change will not take effect.
+
+const DEFAULT_BROWSER = "Microsoft Edge"; // finicky-managed
+
+export default {
+  defaultBrowser: DEFAULT_BROWSER,
+
+  handlers: [
+    // Rules win over DEFAULT_BROWSER, so put links here that should always
+    // open in one specific browser no matter which mode you are in.
+    //
+    // {
+    //   match: ["teams.microsoft.com/*", "*.sharepoint.com/*"],
+    //   browser: "Microsoft Edge",
+    // },
+  ],
+};
