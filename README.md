@@ -31,9 +31,12 @@ This repository contains infrastructure definitions for managing multiple cloud 
 │   ├── spotify/        # Spotify playlist management
 │   └── tailscale/      # Tailscale VPN ACLs and DNS
 │
-└── ansible/            # Configuration Management
-    ├── inventories/    # Host definitions (plaintext; see ansible/README.md)
-    └── roles/          # Reusable roles (common)
+├── ansible/            # Configuration Management
+│   ├── inventories/    # Host definitions (plaintext; see ansible/README.md)
+│   └── roles/          # Reusable roles (common)
+│
+└── mac/                # Local workstation setup
+    └── default-browser/  # One-key default browser switching (Finicky + Raycast)
 ```
 
 ## 🛠️ Terraform Configurations

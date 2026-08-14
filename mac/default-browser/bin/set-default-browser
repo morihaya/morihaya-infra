@@ -1,0 +1,157 @@
+#!/usr/bin/env bash
+# Switch which browser opens links, via Finicky.
+#
+#   set-default-browser            # show the current browser
+#   set-default-browser edge       # route links to Microsoft Edge
+#   set-default-browser comet      # route links to Comet
+#   set-default-browser toggle     # flip between work and personal
+#
+# Finicky must be set as the macOS default browser once (see --check). After
+# that, switching is just a config rewrite: no confirmation dialog, and no
+# Accessibility or Automation permission needed.
+set -euo pipefail
+
+CONFIG="${FINICKY_CONFIG:-$HOME/.finicky.js}"
+MARKER="finicky-managed"
+FINICKY_BUNDLE="se.johnste.finicky"
+LS_PLIST="$HOME/Library/Preferences/com.apple.LaunchServices/com.apple.launchservices.secure.plist"
+
+WORK_BROWSER="${WORK_BROWSER:-edge}"
+PERSONAL_BROWSER="${PERSONAL_BROWSER:-comet}"
+
+# friendly name -> macOS application name (what Finicky expects)
+resolve() {
+  case "$(echo "$1" | tr '[:upper:]' '[:lower:]')" in
+    edge | msedge | edgemac) echo "Microsoft Edge" ;;
+    comet) echo "Comet" ;;
+    chrome | googlechrome) echo "Google Chrome" ;;
+    safari) echo "Safari" ;;
+    firefox | ff) echo "Firefox" ;;
+    brave) echo "Brave Browser" ;;
+    *) return 1 ;;
+  esac
+}
+
+# Browser currently written into the Finicky config.
+current() {
+  grep -- "$MARKER" "$CONFIG" 2>/dev/null | sed -n 's/.*"\([^"]*\)".*/\1/p' | head -1
+}
+
+# macOS https handler, lowercased. Empty if unset.
+os_handler() {
+  python3 - "$LS_PLIST" <<'PY' 2>/dev/null || true
+import plistlib, sys
+try:
+    with open(sys.argv[1], "rb") as f:
+        d = plistlib.load(f)
+except Exception:
+    raise SystemExit
+for h in d.get("LSHandlers", []):
+    if h.get("LSHandlerURLScheme") == "https":
+        v = h.get("LSHandlerRoleAll") or ""
+        if v and v != "-":
+            print(v.lower())
+        break
+PY
+}
+
+check_setup() {
+  local ok=0
+  if [ ! -f "$CONFIG" ]; then
+    echo "Missing config: $CONFIG" >&2
+    ok=1
+  fi
+  if [ ! -d /Applications/Finicky.app ]; then
+    echo "Finicky is not installed (brew install --cask finicky)." >&2
+    ok=1
+  fi
+  if [ "$(os_handler)" != "$FINICKY_BUNDLE" ]; then
+    echo "Finicky is not the macOS default browser." >&2
+    echo "Fix: open Finicky, click 'Set as default browser', confirm the dialog once." >&2
+    ok=1
+  fi
+  if ! pgrep -qx Finicky; then
+    echo "Finicky is not running (links will not be routed)." >&2
+    echo "Fix: open -a Finicky, and add it to Login Items." >&2
+    ok=1
+  fi
+  return $ok
+}
+
+if [ "${1:-}" = "--check" ]; then
+  if check_setup; then
+    echo "Setup OK. Links route through Finicky to $(current)."
+  else
+    exit 1
+  fi
+  exit 0
+fi
+
+if [ $# -eq 0 ]; then
+  cur="$(current)"
+  [ -n "$cur" ] && echo "$cur" || { echo "Could not read $CONFIG" >&2; exit 1; }
+  exit 0
+fi
+
+want="$1"
+if [ "$want" = "toggle" ]; then
+  if [ "$(current)" = "$(resolve "$WORK_BROWSER")" ]; then
+    want="$PERSONAL_BROWSER"
+  else
+    want="$WORK_BROWSER"
+  fi
+fi
+
+app="$(resolve "$want")" || {
+  echo "Unknown browser: $want (edge|comet|chrome|safari|firefox|brave|toggle)" >&2
+  exit 1
+}
+
+if [ ! -d "/Applications/$app.app" ]; then
+  echo "Not installed: /Applications/$app.app" >&2
+  exit 1
+fi
+
+if ! grep -q -- "$MARKER" "$CONFIG" 2>/dev/null; then
+  echo "No line marked '$MARKER' in $CONFIG -- cannot switch safely." >&2
+  exit 1
+fi
+
+if [ "$(current)" = "$app" ]; then
+  echo "Already $app"
+  exit 0
+fi
+
+# Rewrite the quoted app name on the managed line only.
+sed -i '' "/$MARKER/s/\"[^\"]*\"/\"$app\"/" "$CONFIG"
+
+now="$(current)"
+if [ "$now" != "$app" ]; then
+  echo "Failed to update $CONFIG (still $now)." >&2
+  exit 1
+fi
+
+# Finicky 4.2.2 does not hot-reload its config -- neither a rename-style write
+# (sed -i) nor an inode-preserving one triggers a reload. Restarting it is what
+# actually applies the change. It is a background agent, so this is invisible.
+reload_finicky() {
+  pgrep -qx Finicky || return 0
+  pkill -x Finicky || true
+  for _ in $(seq 1 20); do
+    pgrep -qx Finicky || break
+    sleep 0.1
+  done
+  open -gj -a Finicky 2>/dev/null || open -a Finicky
+  for _ in $(seq 1 30); do
+    pgrep -qx Finicky && return 0
+    sleep 0.1
+  done
+  echo "Warning: Finicky did not come back up; run 'open -a Finicky'." >&2
+}
+reload_finicky >/dev/null
+
+echo "Links now open in $app"
+
+# Non-fatal warnings, so the switch still reports success while telling the
+# user why it might not take effect yet.
+check_setup || true
