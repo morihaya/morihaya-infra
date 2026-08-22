@@ -10,6 +10,12 @@ locals {
         "185.199.111.153",
       ]
     }
+    www = {
+      name    = "www.morihaya.tech"
+      type    = "CNAME"
+      ttl     = 3600
+      records = ["morihaya.github.io"]
+    }
     gcp01 = {
       name    = "gcp01.morihaya.tech"
       records = ["34.169.244.99"]
