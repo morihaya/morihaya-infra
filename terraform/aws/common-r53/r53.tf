@@ -1,6 +1,21 @@
 # DNS records for morihaya.tech
 locals {
   records = {
+    apex = {
+      name = "morihaya.tech"
+      records = [
+        "185.199.108.153",
+        "185.199.109.153",
+        "185.199.110.153",
+        "185.199.111.153",
+      ]
+    }
+    www = {
+      name    = "www.morihaya.tech"
+      type    = "CNAME"
+      ttl     = 3600
+      records = ["morihaya.github.io"]
+    }
     gcp01 = {
       name    = "gcp01.morihaya.tech"
       records = ["34.169.244.99"]
